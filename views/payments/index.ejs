@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/clients.css">
+    <link rel="stylesheet" href="/css/pages/payments.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Payments', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Header Panel -->
+                <section class="leads-header">
+                    <div>
+                        <h1>Invoices & Payments</h1>
+                        <p>Track billing cycles, record invoice receipts, view installment payment histories, and check outstanding balances.</p>
+                    </div>
+                    <button class="btn btn-primary" id="openAddInvoiceBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Issue Invoice</span>
+                    </button>
+                </section>
+
+                <!-- Billing metrics grid -->
+                <section class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="title">Total Invoiced</span>
+                        <div class="value">
+                            <%= metrics.totalInvoiced.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Collected Revenue</span>
+                        <div class="value">
+                            <%= metrics.collectedAmount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Outstanding Balance</span>
+                        <div class="value">
+                            <%= metrics.outstandingBalance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Overdue Invoices</span>
+                        <div class="value <%= metrics.overdueCount > 0 ? 'text-danger' : '' %>" style="color: <%= metrics.overdueCount > 0 ? 'var(--danger)' : 'white' %>;">
+                            <%= metrics.overdueCount %>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Search & Filters Panel -->
+                <section class="filter-panel">
+                    <form action="/payments" method="GET" class="filter-form" id="paymentsFilterForm">
+                        <div class="search-input">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" name="search" placeholder="Search invoice number..." value="<%= filters.search %>">
+                        </div>
+
+                        <div class="select-wrapper">
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="" <%= filters.status === '' ? 'selected' : '' %>>All Statuses</option>
+                                <option value="pending" <%= filters.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                                <option value="paid" <%= filters.status === 'paid' ? 'selected' : '' %>>Paid</option>
+                                <option value="overdue" <%= filters.status === 'overdue' ? 'selected' : '' %>>Overdue</option>
+                            </select>
+                        </div>
+
+                        <% if (filters.search || filters.status) { %>
+                            <a href="/payments" class="btn btn-clear">Clear Filters</a>
+                        <% } %>
+                    </form>
+                </section>
+
+                <!-- Payments Table -->
+                <section style="overflow-x: auto; background: rgba(255, 255, 255, 0.005); border-radius: 12px; border: 1px solid var(--border-color); padding: 4px;">
+                    <% if (payments.length === 0) { %>
+                        <div class="empty-state" style="padding: 60px 0;">
+                            <i data-lucide="credit-card" class="empty-icon"></i>
+                            <h3>No invoices found</h3>
+                            <p>Try modifying your filters, or create a new invoice to start tracking payments.</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('openAddInvoiceBtn').click()">Issue Invoice</button>
+                        </div>
+                    <% } else { %>
+                        <table class="payments-table" style="margin-top: 0; border: none; border-radius: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Invoice No</th>
+                                    <th>Client</th>
+                                    <th>Project</th>
+                                    <th>Project Value</th>
+                                    <th>Invoice Amt</th>
+                                    <th>Paid Amt</th>
+                                    <th>Remaining Bal</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th style="width: 60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% payments.forEach(payment => { %>
+                                    <% 
+                                        let paidSum = 0;
+                                        payment.transactions.forEach(t => paidSum += t.amount);
+                                        const remaining = Math.max(0, payment.amount - paidSum);
+                                    %>
+                                    <tr onclick="window.location.href='/payments/<%= payment._id %>'" style="cursor: pointer;">
+                                        <td><strong>#<%= payment.invoiceNumber %></strong></td>
+                                        <td>
+                                            <% if (payment.clientId) { %>
+                                                <a href="/clients/<%= payment.clientId._id %>" onclick="event.stopPropagation();" style="color: var(--primary); text-decoration: underline;">
+                                                    <%= payment.clientId.name %>
+                                                </a>
+                                            <% } else { %>
+                                                <span style="color: rgba(255,255,255,0.4);">Unassigned</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if (payment.projectId) { %>
+                                                <a href="/projects/<%= payment.projectId._id %>" onclick="event.stopPropagation();" style="color: var(--primary); text-decoration: underline;">
+                                                    <%= payment.projectId.name %>
+                                                </a>
+                                            <% } else { %>
+                                                <span style="color: rgba(255,255,255,0.3); font-style: italic;">General Billing</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="amount-text">
+                                            <% if (payment.projectId) { %>
+                                                <%= (payment.projectId.budget || payment.projectId.value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                                            <% } else { %>
+                                                <span style="color: rgba(255,255,255,0.4);">N/A</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="amount-text"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
+                                        <td class="amount-text" style="color: var(--success);"><%= paidSum.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
+                                        <td class="amount-text" style="color: <%= remaining > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.4)' %>;">
+                                            <%= remaining.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                                        </td>
+                                        <td><%= new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                                        <td>
+                                            <span class="status-badge status-<%= payment.status %>"><%= payment.status %></span>
+                                        </td>
+                                         <td style="position: relative;" onclick="event.stopPropagation();">
+                                             <button class="dropdown-trigger" onclick="toggleCardMenu('<%= payment._id %>')">
+                                                 <i data-lucide="more-vertical"></i>
+                                             </button>
+                                             <div class="dropdown-menu" id="menu-<%= payment._id %>" style="right: 18px;">
+                                                 <a href="/payments/<%= payment._id %>">View Details</a>
+                                                 <a href="#" class="delete-link" onclick="event.preventDefault(); deleteInvoicePrompt('<%= payment._id %>', '<%= payment.invoiceNumber %>')">Delete Invoice</a>
+                                             </div>
+                                         </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    <% } %>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Add Invoice -->
+    <div class="modal-backdrop" id="addInvoiceModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Issue Billing Invoice</h2>
+                <button class="modal-close" onclick="closeModal('addInvoiceModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addInvoiceForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_invoice">Invoice Number *</label>
+                        <input type="text" id="new_invoice" placeholder="INV-2026-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_client">Client Account *</label>
+                        <select id="new_client" required onchange="filterProjectsDropdown(this.value)">
+                            <option value="">Select a Client...</option>
+                            <% clients.forEach(c => { %>
+                                <option value="<%= c._id %>"><%= c.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_amount">Invoice Amount (₹) *</label>
+                        <input type="number" id="new_amount" placeholder="50000" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_due">Due Date *</label>
+                        <input type="date" id="new_due" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_project">Linked Project</label>
+                        <select id="new_project">
+                            <option value="">None / General Billing</option>
+                            <% projects.forEach(p => { %>
+                                <option value="<%= p._id %>" data-client-id="<%= p.clientId._id || p.clientId %>"><%= p.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addInvoiceModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Modals -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-backdrop" id="confirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon danger" id="confirmIcon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="btn btn-danger" id="confirmExecuteBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side Scripts -->
+    <script>
+        lucide.createIcons();
+
+        // Menu Dropdown toggle
+        function toggleCardMenu(id) {
+            const dropdown = document.getElementById(`menu-${id}`);
+            const isActive = dropdown.classList.contains('active');
+            
+            // Close all dropdowns first
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            
+            if (!isActive) {
+                dropdown.classList.add('active');
+            }
+        }
+
+        // Close dropdowns on document click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+        });
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirmation Dialog Helpers
+        let currentConfirmCallback = null;
+        function showConfirmDialog(title, message, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            currentConfirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+        function closeConfirmDialog() {
+            document.getElementById('confirmModal').classList.remove('active');
+            currentConfirmCallback = null;
+        }
+        document.getElementById('confirmExecuteBtn').addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            closeConfirmDialog();
+        });
+
+        // Close modal helper
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Add Invoice modal triggers
+        document.getElementById('openAddInvoiceBtn').addEventListener('click', () => {
+            document.getElementById('addInvoiceModal').classList.add('active');
+        });
+
+        // Filter projects based on client selection
+        function filterProjectsDropdown(clientId) {
+            const projSelect = document.getElementById('new_project');
+            const options = projSelect.querySelectorAll('option');
+            
+            options.forEach(opt => {
+                if (opt.value === "") {
+                    opt.style.display = "block";
+                    return;
+                }
+                const optClient = opt.dataset.clientId;
+                if (optClient === clientId) {
+                    opt.style.display = "block";
+                } else {
+                    opt.style.display = "none";
+                }
+            });
+            projSelect.value = ""; // Reset
+        }
+
+        // Add Invoice submission
+        document.getElementById('addInvoiceForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                invoiceNumber: document.getElementById('new_invoice').value,
+                clientId: document.getElementById('new_client').value,
+                projectId: document.getElementById('new_project').value,
+                amount: document.getElementById('new_amount').value,
+                dueDate: document.getElementById('new_due').value
+            };
+
+            fetch('/payments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addInvoiceModal');
+                    document.getElementById('addInvoiceForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error creating invoice', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Delete Invoice prompt
+        function deleteInvoicePrompt(id, number) {
+            showConfirmDialog(
+                'Delete Invoice',
+                `Are you sure you want to delete Invoice #${number}? This action is permanent and will clear all logged payment transactions associated with it.`,
+                () => {
+                    fetch(`/payments/${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            showToast(data.message || 'Error deleting invoice', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Server connection error', 'danger');
+                    });
+                }
+            );
+        }
+    </script>
+</body>
+</html>

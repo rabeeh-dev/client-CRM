@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages/errors.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="error-page-body">
+    <div class="error-container">
+        <div class="error-icon icon-401">
+            <i data-lucide="shield-alert"></i>
+        </div>
+        <div class="error-code"><%= code || '401' %></div>
+        <h1 class="error-title">Unauthorized Access</h1>
+        <p class="error-message">
+            <%= message || "You do not have permission to access this resource or perform this action." %>
+        </p>
+        
+        <div class="error-actions">
+            <a href="/dashboard" class="btn-error-primary">
+                <i data-lucide="home"></i> Back to Dashboard
+            </a>
+            <a href="/login" class="btn-error-secondary">
+                <i data-lucide="log-in"></i> Log In
+            </a>
+        </div>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

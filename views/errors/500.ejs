@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages/errors.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="error-page-body">
+    <div class="error-container">
+        <div class="error-icon icon-500">
+            <i data-lucide="server-crash"></i>
+        </div>
+        <div class="error-code">500</div>
+        <h1 class="error-title">Internal Server Error</h1>
+        <p class="error-message">
+            <%= message || "Something went wrong on our end. We've been notified and are looking into it." %>
+        </p>
+        
+        <div class="error-actions">
+            <a href="/dashboard" class="btn-error-primary">
+                <i data-lucide="home"></i> Back to Dashboard
+            </a>
+            <a href="javascript:location.reload()" class="btn-error-secondary">
+                <i data-lucide="refresh-cw"></i> Try Again
+            </a>
+        </div>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

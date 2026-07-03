@@ -1,0 +1,124 @@
+/* Error Pages Styles */
+body.error-page-body {
+    background-color: #f8fafc;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Outfit', sans-serif;
+}
+
+.error-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+.error-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.error-icon i {
+    width: 40px;
+    height: 40px;
+}
+
+/* 404 Styles */
+.error-icon.icon-404 {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+}
+
+/* 500 Styles */
+.error-icon.icon-500 {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+/* 401/403 Styles */
+.error-icon.icon-401 {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.error-code {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    color: #0f172a;
+    letter-spacing: -1px;
+}
+
+.error-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #334155;
+}
+
+.error-message {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.error-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-error-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.btn-error-primary:hover {
+    background: #1e293b;
+    transform: translateY(-1px);
+}
+
+.btn-error-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: transparent;
+    color: #64748b;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.btn-error-secondary:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}

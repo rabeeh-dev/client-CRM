@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/clients.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Clients', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Header with metrics -->
+                <section class="leads-header">
+                    <div>
+                        <h1>Clients Portfolio</h1>
+                        <p>Manage your client roster, log key contact data, and monitor active project statuses.</p>
+                    </div>
+                    <button class="btn btn-primary" id="openAddClientBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Add Client</span>
+                    </button>
+                </section>
+
+                <!-- Metrics Summary widgets -->
+                <section class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="title">Total Clients</span>
+                        <div class="value"><%= metrics.totalClients %></div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Average Rating</span>
+                        <div class="value"><%= metrics.avgRating %> / 5.0</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Active Projects</span>
+                        <div class="value"><%= metrics.activeProjectsCount %></div>
+                    </div>
+                </section>
+
+                <!-- Search and Filters Panel -->
+                <section class="filter-panel">
+                    <form action="/clients" method="GET" class="filter-form">
+                        <div class="search-input">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" name="search" placeholder="Search clients by name, company..." value="<%= filters.search %>">
+                        </div>
+                        
+                        <div class="select-wrapper">
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All Statuses</option>
+                                <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
+                                <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="select-wrapper">
+                            <select name="rating" onchange="this.form.submit()">
+                                <option value="all" <%= filters.rating === 'all' ? 'selected' : '' %>>All Ratings</option>
+                                <option value="5" <%= filters.rating === '5' ? 'selected' : '' %>>5 Stars</option>
+                                <option value="4" <%= filters.rating === '4' ? 'selected' : '' %>>4+ Stars</option>
+                                <option value="3" <%= filters.rating === '3' ? 'selected' : '' %>>3+ Stars</option>
+                            </select>
+                        </div>
+                        
+                        <% if (filters.search || filters.status !== 'all' || filters.rating !== 'all') { %>
+                            <a href="/clients" class="btn btn-clear">Clear Filters</a>
+                        <% } %>
+                    </form>
+                </section>
+
+                <!-- Clients Card Grid -->
+                <section class="leads-grid">
+                    <% if (clients.length === 0) { %>
+                        <div class="empty-state">
+                            <i data-lucide="users" class="empty-icon"></i>
+                            <h3>No clients found</h3>
+                            <p>Try modifying your filters, or click below to onboard a new client.</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('openAddClientBtn').click()">Add Client</button>
+                        </div>
+                    <% } else { %>
+                        <% clients.forEach(client => { %>
+                            <div class="lead-card status-<%= client.status %>" onclick="window.location.href='/clients/<%= client._id %>'" style="cursor: pointer;">
+                                <div class="card-header">
+                                    <div class="lead-meta">
+                                        <span class="status-badge status-<%= client.status %>"><%= client.status %></span>
+                                        <div class="star-rating">
+                                            <% for(let i = 1; i <= 5; i++) { %>
+                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="<%= i <= client.rating ? 'var(--warning)' : 'none' %>" stroke="var(--warning)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <button class="dropdown-trigger" onclick="event.stopPropagation(); toggleCardMenu('<%= client._id %>')">
+                                        <i data-lucide="more-vertical"></i>
+                                    </button>
+                                    <div class="dropdown-menu" id="menu-<%= client._id %>">
+                                        <a href="/clients/<%= client._id %>">View Details</a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal('<%= JSON.stringify(client) %>')">Edit Client</a>
+                                        <a href="#" class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); deleteClientPrompt('<%= client._id %>', '<%= client.name %>')">Delete Client</a>
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="client-avatar-row">
+                                        <div class="client-avatar">
+                                            <%= client.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() %>
+                                        </div>
+                                        <div class="client-title">
+                                            <h3 class="name"><%= client.name %></h3>
+                                            <span class="company"><%= client.company || 'Individual Freelancer' %></span>
+                                        </div>
+                                    </div>
+                                    <p class="notes-preview"><%= client.notes ? client.notes.replace(/<[^>]*>/g, '').substring(0, 80) + '...' : 'No notes recorded.' %></p>
+                                </div>
+
+                                <div class="card-footer">
+                                    <div class="value">
+                                        <span class="label">Contact details</span>
+                                        <span class="amount" style="font-size: 12px; font-weight: normal; color: var(--text-secondary);"><%= client.email || 'No email' %></span>
+                                    </div>
+                                    <div class="followup">
+                                        <span class="label">Phone</span>
+                                        <span class="date" style="font-weight: 500; color: white;"><%= client.phone || 'None' %></span>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } %>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Add Client -->
+    <div class="modal-backdrop" id="addClientModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Onboard New Client</h2>
+                <button class="modal-close" onclick="closeModal('addClientModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addClientForm" class="modal-form">
+                <!-- Section 1: Client Information -->
+                <div class="form-section-title">Client Information</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_name">Full Name *</label>
+                        <input type="text" id="add_name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add_company">Company Name</label>
+                        <input type="text" id="add_company" placeholder="Acme Corp">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_rating">Client Rating (1-5 Stars)</label>
+                        <select id="add_rating">
+                            <option value="5" selected>5 Stars (Excellent)</option>
+                            <option value="4">4 Stars (Good)</option>
+                            <option value="3">3 Stars (Average)</option>
+                            <option value="2">2 Stars (Fair)</option>
+                            <option value="1">1 Star (Poor)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="add_status">Relationship Status</label>
+                        <select id="add_status">
+                            <option value="active" selected>Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Section 2: Contact Details -->
+                <div class="form-section-title">Contact Details</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_email">Email Address</label>
+                        <input type="email" id="add_email" placeholder="client@acme.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_phone">Phone Number</label>
+                        <input type="text" id="add_phone" placeholder="+91 98765 43210">
+                    </div>
+                </div>
+
+                <!-- Section 3: Social Links -->
+                <div class="form-section-title">Social Links</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_linkedin">LinkedIn URL</label>
+                        <input type="url" id="add_linkedin" placeholder="https://linkedin.com/in/username">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_twitter">Twitter/X URL</label>
+                        <input type="url" id="add_twitter" placeholder="https://x.com/username">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_instagram">Instagram URL</label>
+                        <input type="url" id="add_instagram" placeholder="https://instagram.com/username">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_whatsapp">WhatsApp Direct URL</label>
+                        <input type="url" id="add_whatsapp" placeholder="https://wa.me/number">
+                    </div>
+                </div>
+
+                <!-- Section 4: Internal Notes -->
+                <div class="form-section-title">Internal Notes</div>
+                <div class="form-group">
+                    <label for="add_notes">Private Notes & Requirements</label>
+                    <textarea id="add_notes" rows="3" placeholder="Log key details, billing arrangements, client preferences..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addClientModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Client -->
+    <div class="modal-backdrop" id="editClientModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Client Details</h2>
+                <button class="modal-close" onclick="closeModal('editClientModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="editClientForm" class="modal-form">
+                <input type="hidden" id="edit_id">
+                <!-- Section 1: Client Information -->
+                <div class="form-section-title">Client Information</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_name">Full Name *</label>
+                        <input type="text" id="edit_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_company">Company Name</label>
+                        <input type="text" id="edit_company">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_rating">Client Rating (1-5 Stars)</label>
+                        <select id="edit_rating">
+                            <option value="5">5 Stars (Excellent)</option>
+                            <option value="4">4 Stars (Good)</option>
+                            <option value="3">3 Stars (Average)</option>
+                            <option value="2">2 Stars (Fair)</option>
+                            <option value="1">1 Star (Poor)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_status">Relationship Status</label>
+                        <select id="edit_status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Section 2: Contact Details -->
+                <div class="form-section-title">Contact Details</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_email">Email Address</label>
+                        <input type="email" id="edit_email">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_phone">Phone Number</label>
+                        <input type="text" id="edit_phone">
+                    </div>
+                </div>
+
+                <!-- Section 3: Social Links -->
+                <div class="form-section-title">Social Links</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_linkedin">LinkedIn URL</label>
+                        <input type="url" id="edit_linkedin">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_twitter">Twitter/X URL</label>
+                        <input type="url" id="edit_twitter">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_instagram">Instagram URL</label>
+                        <input type="url" id="edit_instagram">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_whatsapp">WhatsApp Direct URL</label>
+                        <input type="url" id="edit_whatsapp">
+                    </div>
+                </div>
+
+                <!-- Section 4: Internal Notes -->
+                <div class="form-section-title">Internal Notes</div>
+                <div class="form-group">
+                    <label for="edit_notes">Private Notes & Requirements</label>
+                    <textarea id="edit_notes" rows="3"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editClientModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Modals -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-backdrop" id="confirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon danger" id="confirmIcon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="btn btn-danger" id="confirmExecuteBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Logic Script -->
+    <script>
+        lucide.createIcons();
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirmation Dialog Helpers
+        let currentConfirmCallback = null;
+        function showConfirmDialog(title, message, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            currentConfirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+        function closeConfirmDialog() {
+            document.getElementById('confirmModal').classList.remove('active');
+            currentConfirmCallback = null;
+        }
+        document.getElementById('confirmExecuteBtn').addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            closeConfirmDialog();
+        });
+
+        // Dropdown Menu Toggling
+        let activeDropdown = null;
+        function toggleCardMenu(clientId) {
+            const menu = document.getElementById(`menu-${clientId}`);
+            if (activeDropdown && activeDropdown !== menu) {
+                activeDropdown.classList.remove('active');
+            }
+            menu.classList.toggle('active');
+            activeDropdown = menu.classList.contains('active') ? menu : null;
+        }
+
+        // Close dropdowns if clicking outside
+        window.addEventListener('click', (e) => {
+            if (activeDropdown && !e.target.closest('.dropdown-trigger') && !e.target.closest('.dropdown-menu')) {
+                activeDropdown.classList.remove('active');
+                activeDropdown = null;
+            }
+        });
+
+        // Modals management
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Add Client Modal Trigger
+        document.getElementById('openAddClientBtn').addEventListener('click', () => {
+            document.getElementById('addClientModal').classList.add('active');
+        });
+
+        // Add Client Submit Handler
+        document.getElementById('addClientForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('add_name').value,
+                company: document.getElementById('add_company').value,
+                rating: document.getElementById('add_rating').value,
+                status: document.getElementById('add_status').value,
+                email: document.getElementById('add_email').value,
+                phone: document.getElementById('add_phone').value,
+                linkedin: document.getElementById('add_linkedin').value,
+                twitter: document.getElementById('add_twitter').value,
+                instagram: document.getElementById('add_instagram').value,
+                whatsapp: document.getElementById('add_whatsapp').value,
+                notes: document.getElementById('add_notes').value
+            };
+
+            fetch('/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addClientModal');
+                    document.getElementById('addClientForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error onboarding client', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Edit Client Modal Trigger
+        function openEditModal(clientStr) {
+            const client = JSON.parse(clientStr);
+            document.getElementById('edit_id').value = client._id;
+            document.getElementById('edit_name').value = client.name;
+            document.getElementById('edit_company').value = client.company || '';
+            document.getElementById('edit_rating').value = client.rating || 5;
+            document.getElementById('edit_status').value = client.status || 'active';
+            document.getElementById('edit_email').value = client.email || '';
+            document.getElementById('edit_phone').value = client.phone || '';
+            document.getElementById('edit_linkedin').value = (client.socialMedia && client.socialMedia.linkedin) || '';
+            document.getElementById('edit_twitter').value = (client.socialMedia && client.socialMedia.twitter) || '';
+            document.getElementById('edit_instagram').value = (client.socialMedia && client.socialMedia.instagram) || '';
+            document.getElementById('edit_whatsapp').value = (client.socialMedia && client.socialMedia.whatsapp) || '';
+            document.getElementById('edit_notes').value = client.notes || '';
+
+            document.getElementById('editClientModal').classList.add('active');
+        }
+
+        // Edit Client Submit Handler
+        document.getElementById('editClientForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const payload = {
+                name: document.getElementById('edit_name').value,
+                company: document.getElementById('edit_company').value,
+                rating: document.getElementById('edit_rating').value,
+                status: document.getElementById('edit_status').value,
+                email: document.getElementById('edit_email').value,
+                phone: document.getElementById('edit_phone').value,
+                linkedin: document.getElementById('edit_linkedin').value,
+                twitter: document.getElementById('edit_twitter').value,
+                instagram: document.getElementById('edit_instagram').value,
+                whatsapp: document.getElementById('edit_whatsapp').value,
+                notes: document.getElementById('edit_notes').value
+            };
+
+            fetch(`/clients/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('editClientModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error updating client', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Delete Client Prompt
+        function deleteClientPrompt(id, name) {
+            showConfirmDialog(
+                'Delete Client',
+                `Are you sure you want to delete client '${name}' and all associated projects, invoices, and documents? This action is permanent.`,
+                () => {
+                    fetch(`/clients/${id}`, {
+                        method: 'DELETE'
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            showToast(data.message || 'Error deleting client', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Server connection error', 'danger');
+                    });
+                }
+            );
+        }
+    </script>
+</body>
+</html>

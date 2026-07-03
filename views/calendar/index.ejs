@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/clients.css">
+    <link rel="stylesheet" href="/css/pages/calendar.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Schedule Calendar', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Header Panel -->
+                <section class="leads-header">
+                    <div>
+                        <h1>Calendar Schedule</h1>
+                        <p>Access a unified visual timeline of upcoming meetings, milestone deadlines, task due dates, and client follow-ups.</p>
+                    </div>
+                </section>
+
+                <!-- Calendar Controls Toolbar -->
+                <section class="calendar-controls-row">
+                    <!-- Left: Month/Week View Toggles -->
+                    <div class="btn-group" style="display: flex; gap: 8px;">
+                        <a href="/calendar?view=month&date=<%= activeDateStr %>" class="btn <%= view === 'month' ? 'btn-primary' : 'btn-secondary' %> btn-sm">Month View</a>
+                        <a href="/calendar?view=week&date=<%= activeDateStr %>" class="btn <%= view === 'week' ? 'btn-primary' : 'btn-secondary' %> btn-sm">Week View</a>
+                    </div>
+
+                    <!-- Center: Navigation controls -->
+                    <div class="calendar-nav-group">
+                        <a href="<%= prevDateLink %>" class="btn btn-secondary btn-sm" style="padding: 6px 10px;" title="Previous">
+                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+                        </a>
+                        <a href="/calendar?view=<%= view %>" class="btn btn-secondary btn-sm">Today</a>
+                        <span class="calendar-title-text"><%= calendarTitle %></span>
+                        <a href="<%= nextDateLink %>" class="btn btn-secondary btn-sm" style="padding: 6px 10px;" title="Next">
+                            <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                        </a>
+                    </div>
+
+                    <!-- Right: Quick Add Shortcut -->
+                    <div>
+                        <a href="/tasks" class="btn btn-secondary btn-sm">
+                            <i data-lucide="check-square" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+                            <span>Tasks Board</span>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Legend Panel -->
+                <section class="calendar-legend-panel">
+                    <span style="font-weight:600; color:white; margin-right:8px;">Legend:</span>
+                    <div class="legend-item">
+                        <span class="legend-color-dot meeting"></span>
+                        <span>Client Meetings</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color-dot deadline"></span>
+                        <span>Project Deadlines</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color-dot payment"></span>
+                        <span>Invoice Due Dates</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color-dot followup"></span>
+                        <span>Lead Follow-ups</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color-dot task"></span>
+                        <span>Project Tasks</span>
+                    </div>
+                </section>
+
+                <!-- MONTH VIEW GRID -->
+                <% if (view === 'month') { %>
+                    <div class="month-grid-wrapper">
+                        <!-- Days Headers -->
+                        <div class="month-grid-header">
+                            <div>Sunday</div>
+                            <div>Monday</div>
+                            <div>Tuesday</div>
+                            <div>Wednesday</div>
+                            <div>Thursday</div>
+                            <div>Friday</div>
+                            <div>Saturday</div>
+                        </div>
+
+                        <!-- Days Grid -->
+                        <div class="month-days-container">
+                            <% monthGrid.forEach(cell => { %>
+                                <div class="calendar-day-cell <%= cell.isPadding ? 'is-padding' : '' %> <%= cell.isToday ? 'is-today' : '' %>">
+                                    <span class="day-number-label"><%= cell.dayNumber %></span>
+                                    
+                                    <!-- Render day events -->
+                                    <% cell.events.forEach(event => { %>
+                                        <a href="<%= event.link %>" class="cell-event-item event-<%= event.type %>" title="<%= event.title %> - <%= event.description %>">
+                                            <% if (event.type === 'meeting') { %>
+                                                <i data-lucide="users" style="width:10px; height:10px; flex-shrink:0;"></i>
+                                            <% } else if (event.type === 'deadline') { %>
+                                                <i data-lucide="folder" style="width:10px; height:10px; flex-shrink:0;"></i>
+                                            <% } else if (event.type === 'payment') { %>
+                                                <i data-lucide="credit-card" style="width:10px; height:10px; flex-shrink:0;"></i>
+                                            <% } else if (event.type === 'followup') { %>
+                                                <i data-lucide="phone" style="width:10px; height:10px; flex-shrink:0;"></i>
+                                            <% } else { %>
+                                                <i data-lucide="check-square" style="width:10px; height:10px; flex-shrink:0;"></i>
+                                            <% } %>
+                                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                <% if (event.time) { %><%= event.time.replace(/:\d+\s/, ' ') %> <% } %>
+                                                <%= event.title.replace(/^Meeting:\s|^Deadline:\s|^Invoice Due:\s|^Follow-up:\s|^Task:\s/, '') %>
+                                            </span>
+                                        </a>
+                                    <% }) %>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <!-- WEEK VIEW COLUMNS -->
+                    <div class="week-grid-container">
+                        <% weekDays.forEach(day => { %>
+                            <div class="week-day-column <%= day.isToday ? 'is-today' : '' %>">
+                                <div class="week-day-header">
+                                    <h3><%= day.name.substring(0, 3) %></h3>
+                                    <span class="date-num"><%= day.dateLabel %></span>
+                                </div>
+
+                                <div style="display:flex; flex-direction:column; gap:10px; flex-grow:1;">
+                                    <% if (day.events.length === 0) { %>
+                                        <div class="column-empty-state" style="padding: 20px 0;">No events</div>
+                                    <% } else { %>
+                                        <% day.events.forEach(event => { %>
+                                            <a href="<%= event.link %>" class="week-event-card event-<%= event.type %>">
+                                                <span class="type-badge"><%= event.type %></span>
+                                                <h4><%= event.title.replace(/^Meeting:\s|^Deadline:\s|^Invoice Due:\s|^Follow-up:\s|^Task:\s/, '') %></h4>
+                                                <% if (event.time) { %>
+                                                    <span class="time">
+                                                        <i data-lucide="clock" style="width:10px; height:10px;"></i>
+                                                        <span><%= event.time %></span>
+                                                    </span>
+                                                <% } %>
+                                                <% if (event.description) { %>
+                                                    <p style="font-size:11px; color:rgba(255,255,255,0.4); line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"><%= event.description %></p>
+                                                <% } %>
+                                            </a>
+                                        <% }) %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/clients.css">
+    <link rel="stylesheet" href="/css/pages/projects.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Projects', link: '/projects' },
+                    { label: project.name, active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Action Header Panel -->
+                <section class="detail-action-header">
+                    <div class="lead-identity">
+                        <div class="client-avatar-large" style="background: linear-gradient(135deg, var(--warning) 0%, var(--primary) 100%);">
+                            <i data-lucide="folder" style="width: 28px; height: 28px; color: white;"></i>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <h1><%= project.name %></h1>
+                            <div class="badges-row">
+                                <span class="status-badge status-<%= project.status %>" id="projectStatusBadge"><%= project.status.replace('_', ' ') %></span>
+                                <span class="priority-badge priority-<%= project.priority %>"><%= project.priority %> Priority</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="header-buttons">
+                        <a href="/projects" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            <span>Back to List</span>
+                        </a>
+                        <button class="btn btn-secondary" id="openEditProjectBtn">
+                            <i data-lucide="edit"></i>
+                            <span>Edit Workspace</span>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteProjectPrompt('<%= project._id %>', '<%= project.name %>')">
+                            <i data-lucide="trash-2"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Two-Column Layout -->
+                <div class="content-split">
+                    <!-- Left: Workspace Overview & Milestone Checklist -->
+                    <div class="details-sidebar">
+
+                        <!-- Project Metadata Panel -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Overview Details</h2>
+                            </div>
+                            <div class="panel-content details-list">
+                                <div class="detail-row">
+                                    <span class="label">Assigned Client</span>
+                                    <span class="val"><a href="/clients/<%= project.clientId._id %>" style="color: var(--primary); text-decoration: underline;"><%= project.clientId.name %></a></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Project Budget</span>
+                                    <span class="val" style="font-weight: 600; color: white;"><%= (project.budget || project.value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Deadline Target</span>
+                                    <span class="val"><%= project.endDate ? new Date(project.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No Deadline Logged' %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Description</span>
+                                    <span class="val" style="line-height: 1.4; font-size: 13px; color: rgba(255, 255, 255, 0.6);"><%= project.description || 'No detailed scope notes available.' %></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Sub-Resource Tabs Workspace -->
+                    <div class="details-main">
+                        <div class="tabs-container">
+                            <div class="tabs-header">
+                                <button class="tab-btn active" onclick="switchTab(event, 'tasksTab')">Tasks List</button>
+                                <button class="tab-btn" onclick="switchTab(event, 'paymentsTab')">Payments</button>
+                                <button class="tab-btn" onclick="switchTab(event, 'timelineTab')">Activity Timeline</button>
+                            </div>
+
+                            <!-- Tasks Tab -->
+                            <div class="tab-content active" id="tasksTab">
+                                <div class="tab-section-header">
+                                    <h3>Project Task board</h3>
+                                    <button class="btn btn-secondary btn-sm" id="openAddTaskBtn">
+                                        <i data-lucide="plus"></i>
+                                        <span>Add Task</span>
+                                    </button>
+                                </div>
+                                <div class="tasks-list">
+                                    <% if (tasks.length === 0) { %>
+                                        <div class="empty-state-small">
+                                            <p>No tasks created yet for this project. Keep items tracked here.</p>
+                                        </div>
+                                    <% } else { %>
+                                        <% tasks.forEach(task => { %>
+                                            <div class="task-item">
+                                                <div class="task-left">
+                                                    <input type="checkbox" <%= task.status === 'completed' ? 'checked' : '' %> onclick="toggleTaskState('<%= task._id %>', this)">
+                                                    <span class="task-title <%= task.status === 'completed' ? 'completed' : '' %>"><%= task.title %></span>
+                                                </div>
+                                                <div class="task-right">
+                                                    <span class="priority-badge priority-<%= task.priority %>"><%= task.priority %></span>
+                                                    <% if (task.dueDate) { %>
+                                                        <span class="task-due"><%= new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></span>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Payments Tab -->
+                            <div class="tab-content" id="paymentsTab">
+                                <div class="tab-section-header">
+                                    <h3>Project Billing Invoices</h3>
+                                    <button class="btn btn-secondary btn-sm" id="openAddPaymentBtn">
+                                        <i data-lucide="plus"></i>
+                                        <span>Issue Invoice</span>
+                                    </button>
+                                </div>
+                                <div class="payments-list">
+                                    <% if (payments.length === 0) { %>
+                                        <div class="empty-state-small">
+                                            <p>No invoice payments issued yet for this project.</p>
+                                        </div>
+                                    <% } else { %>
+                                        <table class="payments-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Invoice No</th>
+                                                    <th>Amount</th>
+                                                    <th>Due Date</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <% payments.forEach(payment => { %>
+                                                    <tr>
+                                                        <td><strong>#<%= payment.invoiceNumber %></strong></td>
+                                                        <td class="amount-text"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
+                                                        <td><%= new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                                                        <td>
+                                                            <span class="status-badge status-<%= payment.status %>"><%= payment.status %></span>
+                                                        </td>
+                                                    </tr>
+                                                <% }) %>
+                                            </tbody>
+                                        </table>
+                                    <% } %>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Activity Timeline Tab -->
+                            <div class="tab-content" id="timelineTab">
+                                <div class="tab-section-header">
+                                    <h3>Project Activity Log</h3>
+                                    <button class="btn btn-secondary btn-sm" id="openAddActivityBtn">
+                                        <i data-lucide="plus"></i>
+                                        <span>Log Interaction</span>
+                                    </button>
+                                </div>
+                                <div class="timeline-list">
+                                    <% if (activities.length === 0) { %>
+                                        <div class="empty-state-small">
+                                            <p>No activity logs recorded yet.</p>
+                                        </div>
+                                    <% } else { %>
+                                        <% activities.forEach(act => { %>
+                                            <div class="timeline-item">
+                                                <div class="timeline-icon">
+                                                    <% if (act.type === 'project') { %>
+                                                        <i data-lucide="folder"></i>
+                                                    <% } else if (act.type === 'payment') { %>
+                                                        <i data-lucide="credit-card"></i>
+                                                    <% } else if (act.type === 'document') { %>
+                                                        <i data-lucide="file-text"></i>
+                                                    <% } else if (act.type === 'email') { %>
+                                                        <i data-lucide="mail"></i>
+                                                    <% } else if (act.type === 'call') { %>
+                                                        <i data-lucide="phone"></i>
+                                                    <% } else if (act.type === 'meeting') { %>
+                                                        <i data-lucide="users"></i>
+                                                    <% } else { %>
+                                                        <i data-lucide="activity"></i>
+                                                    <% } %>
+                                                </div>
+                                                <div class="timeline-content">
+                                                    <div class="timeline-meta">
+                                                        <span class="action"><%= act.type.toUpperCase() %> EVENT</span>
+                                                        <span class="time"><%= new Date(act.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %></span>
+                                                    </div>
+                                                    <p class="desc"><%= act.description %></p>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Project -->
+    <div class="modal-backdrop" id="editProjectModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Project Details</h2>
+                <button class="modal-close" onclick="closeModal('editProjectModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="editProjectForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_name">Project Name *</label>
+                        <input type="text" id="edit_name" value="<%= project.name %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_client">Assign Client *</label>
+                        <select id="edit_client" disabled>
+                            <option value="<%= project.clientId._id %>"><%= project.clientId.name %></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_budget">Project Budget (₹) *</label>
+                        <input type="number" id="edit_budget" value="<%= project.budget || project.value || 0 %>" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_deadline">Deadline Date</label>
+                        <input type="date" id="edit_deadline" value="<%= project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '' %>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_status">Project Status</label>
+                        <select id="edit_status">
+                            <option value="planning" <%= project.status === 'planning' ? 'selected' : '' %>>Planning</option>
+                            <option value="in_progress" <%= project.status === 'in_progress' ? 'selected' : '' %>>In Progress</option>
+                            <option value="completed" <%= project.status === 'completed' ? 'selected' : '' %>>Completed</option>
+                            <option value="on_hold" <%= project.status === 'on_hold' ? 'selected' : '' %>>On Hold</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_priority">Project Priority</label>
+                        <select id="edit_priority">
+                            <option value="low" <%= project.priority === 'low' ? 'selected' : '' %>>Low Priority</option>
+                            <option value="medium" <%= project.priority === 'medium' ? 'selected' : '' %>>Medium Priority</option>
+                            <option value="high" <%= project.priority === 'high' ? 'selected' : '' %>>High Priority</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit_desc">Project Description & Scope</label>
+                    <textarea id="edit_desc" rows="4"><%= project.description || '' %></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editProjectModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Task -->
+    <div class="modal-backdrop" id="addTaskModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Add Project Task</h2>
+                <button class="modal-close" onclick="closeModal('addTaskModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addTaskForm" class="modal-form">
+                <div class="form-group">
+                    <label for="task_title">Task Title *</label>
+                    <input type="text" id="task_title" placeholder="Design custom landing layout" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task_priority">Task Priority</label>
+                        <select id="task_priority">
+                            <option value="low">Low Priority</option>
+                            <option value="medium" selected>Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_due">Due Date</label>
+                        <input type="date" id="task_due">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addTaskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Payment -->
+    <div class="modal-backdrop" id="addPaymentModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Issue Project Invoice</h2>
+                <button class="modal-close" onclick="closeModal('addPaymentModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addPaymentForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pay_invoice">Invoice Number *</label>
+                        <input type="text" id="pay_invoice" placeholder="INV-PROJ-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pay_amount">Invoice Amount *</label>
+                        <input type="number" id="pay_amount" placeholder="45000" min="0" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pay_status">Invoice Status</label>
+                        <select id="pay_status">
+                            <option value="pending" selected>Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pay_due">Due Date *</label>
+                        <input type="date" id="pay_due" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addPaymentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Issue Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Document -->
+    <div class="modal-backdrop" id="addDocModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Register Project Specification Doc</h2>
+                <button class="modal-close" onclick="closeModal('addDocModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addDocForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="doc_name">Document Name *</label>
+                        <input type="text" id="doc_name" placeholder="Technical Specification API Doc" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="doc_url">Document File Link (URL) *</label>
+                        <input type="url" id="doc_url" placeholder="https://drive.google.com/.../file" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="doc_size">File Size</label>
+                        <input type="text" id="doc_size" placeholder="1.2 MB" value="1.5 MB">
+                    </div>
+                    <div class="form-group">
+                        <label for="doc_type">File Extension Type</label>
+                        <select id="doc_type">
+                            <option value="PDF" selected>PDF</option>
+                            <option value="DOCX">Word Document (.docx)</option>
+                            <option value="XLSX">Spreadsheet (.xlsx)</option>
+                            <option value="ZIP">Archive (.zip)</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addDocModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Log Activity -->
+    <div class="modal-backdrop" id="logActivityModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Log Client Interaction for Project</h2>
+                <button class="modal-close" onclick="closeModal('logActivityModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="logActivityForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="act_type">Event Type</label>
+                        <select id="act_type">
+                            <option value="call" selected>Phone Call</option>
+                            <option value="meeting">Meeting Session</option>
+                            <option value="note">Internal Review Note</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="act_desc">Activity Description *</label>
+                    <textarea id="act_desc" rows="4" placeholder="Milestones scope reviews, call logs with client, QA reviews..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('logActivityModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Log Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Modals -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-backdrop" id="confirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon danger" id="confirmIcon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="btn btn-danger" id="confirmExecuteBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side script -->
+    <script>
+        lucide.createIcons();
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirmation Dialog Helpers
+        let currentConfirmCallback = null;
+        function showConfirmDialog(title, message, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            currentConfirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+        function closeConfirmDialog() {
+            document.getElementById('confirmModal').classList.remove('active');
+            currentConfirmCallback = null;
+        }
+        document.getElementById('confirmExecuteBtn').addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            closeConfirmDialog();
+        });
+
+        // Tab switcher
+        function switchTab(evt, tabId) {
+            const contents = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-btn');
+
+            contents.forEach(c => c.classList.remove('active'));
+            buttons.forEach(b => b.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Close modal helper
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Modal Triggers
+        document.getElementById('openEditProjectBtn').addEventListener('click', () => {
+            document.getElementById('editProjectModal').classList.add('active');
+        });
+        document.getElementById('openAddTaskBtn').addEventListener('click', () => {
+            document.getElementById('addTaskModal').classList.add('active');
+        });
+        document.getElementById('openAddPaymentBtn').addEventListener('click', () => {
+            document.getElementById('addPaymentModal').classList.add('active');
+        });
+        document.getElementById('openAddDocBtn').addEventListener('click', () => {
+            document.getElementById('addDocModal').classList.add('active');
+        });
+        document.getElementById('openAddActivityBtn').addEventListener('click', () => {
+            document.getElementById('logActivityModal').classList.add('active');
+        });
+
+        // Delete Project prompt
+        function deleteProjectPrompt(id, name) {
+            showConfirmDialog(
+                'Delete Project Workspace',
+                `Are you sure you want to delete the project '${name}' and all associated tasks? This action is permanent.`,
+                () => {
+                    fetch(`/projects/${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => window.location.href = '/projects', 1000);
+                        } else {
+                            showToast(data.message || 'Error deleting project', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Server connection error', 'danger');
+                    });
+                }
+            );
+        }
+
+        // Edit Project Overview details
+        document.getElementById('editProjectForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('edit_name').value,
+                budget: document.getElementById('edit_budget').value,
+                deadline: document.getElementById('edit_deadline').value,
+                status: document.getElementById('edit_status').value,
+                priority: document.getElementById('edit_priority').value,
+                description: document.getElementById('edit_desc').value
+            };
+
+            fetch('/projects/<%= project._id %>', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('editProjectModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error updating details', 'danger');
+                }
+            });
+        });
+
+
+        // Add Project Task
+        document.getElementById('addTaskForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('task_title').value,
+                priority: document.getElementById('task_priority').value,
+                dueDate: document.getElementById('task_due').value
+            };
+
+            fetch('/projects/<%= project._id %>/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addTaskModal');
+                    document.getElementById('addTaskForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error adding task', 'danger');
+                }
+            });
+        });
+
+        // Toggle Task Complete State
+        function toggleTaskState(taskId, checkbox) {
+            const completed = checkbox.checked;
+            const titleSpan = checkbox.nextElementSibling;
+            
+            if (completed) {
+                titleSpan.classList.add('completed');
+            } else {
+                titleSpan.classList.remove('completed');
+            }
+
+            fetch(`/projects/<%= project._id %>/tasks/${taskId}/toggle`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                } else {
+                    checkbox.checked = !completed;
+                    if (!completed) {
+                        titleSpan.classList.add('completed');
+                    } else {
+                        titleSpan.classList.remove('completed');
+                    }
+                    showToast(data.message || 'Error toggling task', 'danger');
+                }
+            });
+        }
+
+        // Issue Project Invoice Payment
+        document.getElementById('addPaymentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                invoiceNumber: document.getElementById('pay_invoice').value,
+                amount: document.getElementById('pay_amount').value,
+                status: document.getElementById('pay_status').value,
+                dueDate: document.getElementById('pay_due').value
+            };
+
+            fetch('/projects/<%= project._id %>/payments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addPaymentModal');
+                    document.getElementById('addPaymentForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error issuing invoice', 'danger');
+                }
+            });
+        });
+
+        // Upload Project Document link
+        document.getElementById('addDocForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('doc_name').value,
+                fileUrl: document.getElementById('doc_url').value,
+                fileSize: document.getElementById('doc_size').value,
+                fileType: document.getElementById('doc_type').value
+            };
+
+            fetch('/projects/<%= project._id %>/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addDocModal');
+                    document.getElementById('addDocForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error registering document', 'danger');
+                }
+            });
+        });
+
+        // Log Manual Project timeline note
+        document.getElementById('logActivityForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                type: document.getElementById('act_type').value,
+                description: document.getElementById('act_desc').value
+            };
+
+            fetch('/projects/<%= project._id %>/activities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('logActivityModal');
+                    document.getElementById('logActivityForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error logging event', 'danger');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!-- Common Header Row -->
+<header class="app-header">
+    <div class="header-breadcrumb">
+        <% if (locals.breadcrumbs && locals.breadcrumbs.length > 0) { %>
+            <% breadcrumbs.forEach((crumb, index) => { %>
+                <% if (crumb.active) { %>
+                    <span class="active"><%= crumb.label %></span>
+                <% } else { %>
+                    <span class="parent"><%= crumb.label %></span>
+                    <span class="separator">/</span>
+                <% } %>
+            <% }) %>
+        <% } else { %>
+            <span class="parent">Workspace</span>
+            <span class="separator">/</span>
+            <span class="active">CRM</span>
+        <% } %>
+    </div>
+    
+    <div class="header-actions">
+        <div style="position: relative;">
+            <button class="action-btn notifications-btn" title="Notifications" onclick="document.getElementById('notifDropdown').classList.toggle('active'); event.stopPropagation();">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+                <% if (locals.notifications && locals.notifications.length > 0) { %>
+                    <span class="notification-dot"></span>
+                <% } %>
+            </button>
+
+            <div id="notifDropdown" class="notifications-dropdown">
+                <div class="notif-header">
+                    <h3>Notifications & Reminders</h3>
+                </div>
+                <div class="notif-body">
+                    <% if (locals.notifications && locals.notifications.length > 0) { %>
+                        <% locals.notifications.forEach(n => { %>
+                            <a href="<%= n.link %>" class="notif-item">
+                                <div class="notif-icon">
+                                    <i data-lucide="<%= n.icon %>"></i>
+                                </div>
+                                <div class="notif-content">
+                                    <div class="notif-title"><%= n.title %></div>
+                                    <div class="notif-time <%= n.isOverdue ? 'overdue' : '' %>"><%= n.time %></div>
+                                </div>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="notif-empty">No upcoming reminders or events.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <style>
+        .notifications-dropdown {
+            display: none;
+            position: absolute;
+            top: 120%;
+            right: 0;
+            width: 320px;
+            background: #0d1122;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            overflow: hidden;
+        }
+        .notifications-dropdown.active {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+        .notif-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .notif-header h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary, #f3f4f6);
+        }
+        .notif-body {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .notif-item {
+            display: flex;
+            padding: 1rem;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+            text-decoration: none;
+            color: var(--text-primary, #f3f4f6);
+            transition: background 0.2s;
+        }
+        .notif-item:last-child {
+            border-bottom: none;
+        }
+        .notif-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .notif-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .notif-icon i { width: 18px; height: 18px; }
+        .notif-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .notif-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        .notif-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary, #9ca3af);
+        }
+        .notif-time.overdue {
+            color: var(--danger, #ef4444);
+            font-weight: 600;
+        }
+        .notif-empty {
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: var(--text-secondary, #9ca3af);
+            font-size: 0.9rem;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        </style>
+        <script>
+            // Close dropdown if clicked outside
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('notifDropdown');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    if (!dropdown.contains(event.target)) {
+                        dropdown.classList.remove('active');
+                    }
+                }
+            });
+        </script>
+
+        <div class="user-profile">
+            <div class="profile-avatar" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                <% if (locals.user && locals.user.profileImage) { %>
+                    <img src="<%= locals.user.profileImage %>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                <% } else { %>
+                    <%= locals.user ? locals.user.firstName.substring(0, 1) + locals.user.lastName.substring(0, 1) : 'AD' %>
+                <% } %>
+            </div>
+            <div class="profile-info">
+                <span class="name"><%= locals.user ? (locals.user.firstName + ' ' + locals.user.lastName) : 'Administrator' %></span>
+                <span class="role">Admin</span>
+            </div>
+        </div>
+    </div>
+</header>

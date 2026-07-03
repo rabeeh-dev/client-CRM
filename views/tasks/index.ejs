@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/clients.css">
+    <link rel="stylesheet" href="/css/pages/tasks.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Tasks Board', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Header Panel -->
+                <section class="leads-header">
+                    <div>
+                        <h1>Tasks Board</h1>
+                        <p>Organize, prioritize, and manage engineering and delivery tasks across active projects.</p>
+                    </div>
+                    <button class="btn btn-primary" id="openAddTaskBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Add Task</span>
+                    </button>
+                </section>
+
+                <!-- Search & Filters Panel -->
+                <section class="filter-panel">
+                    <form action="/tasks" method="GET" class="filter-form" id="tasksFilterForm">
+                        <div class="search-input">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" name="search" placeholder="Search tasks by title..." value="<%= filters.search %>">
+                        </div>
+
+                        <div class="select-wrapper">
+                            <select name="priority" onchange="this.form.submit()">
+                                <option value="" <%= filters.priority === '' ? 'selected' : '' %>>All Priorities</option>
+                                <option value="low" <%= filters.priority === 'low' ? 'selected' : '' %>>Low Priority</option>
+                                <option value="medium" <%= filters.priority === 'medium' ? 'selected' : '' %>>Medium Priority</option>
+                                <option value="high" <%= filters.priority === 'high' ? 'selected' : '' %>>High Priority</option>
+                            </select>
+                        </div>
+
+                        <div class="select-wrapper">
+                            <select name="projectId" onchange="this.form.submit()">
+                                <option value="" <%= filters.projectId === '' ? 'selected' : '' %>>All Projects</option>
+                                <% projects.forEach(p => { %>
+                                    <option value="<%= p._id %>" <%= filters.projectId === p._id.toString() ? 'selected' : '' %>><%= p.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <% if (filters.search || filters.priority || filters.projectId) { %>
+                            <a href="/tasks" class="btn btn-clear">Clear Filters</a>
+                        <% } %>
+                    </form>
+                </section>
+
+                <!-- Kanban Board Container -->
+                <div class="board-container">
+                    
+                    <!-- COLUMN 1: TODO -->
+                    <div class="board-column todo" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')">
+                        <div class="column-header">
+                            <h2>
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--warning);"></span>
+                                <span>Todo</span>
+                            </h2>
+                            <span class="column-count"><%= todoTasks.length %></span>
+                        </div>
+                        <div class="cards-list" id="todo-list">
+                            <% if (todoTasks.length === 0) { %>
+                                <div class="column-empty-state">No pending tasks</div>
+                            <% } else { %>
+                                <% todoTasks.forEach(task => { %>
+                                    <%- include('../partials/taskCard', { task: task, currentColumn: 'todo' }) %>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- COLUMN 2: IN PROGRESS -->
+                    <div class="board-column in_progress" ondragover="allowDrop(event)" ondrop="drop(event, 'in_progress')">
+                        <div class="column-header">
+                            <h2>
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary);"></span>
+                                <span>In Progress</span>
+                            </h2>
+                            <span class="column-count"><%= inProgressTasks.length %></span>
+                        </div>
+                        <div class="cards-list" id="in_progress-list">
+                            <% if (inProgressTasks.length === 0) { %>
+                                <div class="column-empty-state">No tasks in progress</div>
+                            <% } else { %>
+                                <% inProgressTasks.forEach(task => { %>
+                                    <%- include('../partials/taskCard', { task: task, currentColumn: 'in_progress' }) %>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- COLUMN 3: COMPLETED -->
+                    <div class="board-column completed" ondragover="allowDrop(event)" ondrop="drop(event, 'completed')">
+                        <div class="column-header">
+                            <h2>
+                                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--success);"></span>
+                                <span>Completed</span>
+                            </h2>
+                            <span class="column-count"><%= completedTasks.length %></span>
+                        </div>
+                        <div class="cards-list" id="completed-list">
+                            <% if (completedTasks.length === 0) { %>
+                                <div class="column-empty-state">No tasks completed</div>
+                            <% } else { %>
+                                <% completedTasks.forEach(task => { %>
+                                    <%- include('../partials/taskCard', { task: task, currentColumn: 'completed' }) %>
+                                <% }) %>
+                            <% } %>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Add Task -->
+    <div class="modal-backdrop" id="addTaskModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Add New Task</h2>
+                <button class="modal-close" onclick="closeModal('addTaskModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addTaskForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_title">Task Title *</label>
+                        <input type="text" id="new_title" placeholder="Implement payment gateway" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_project">Assign Project *</label>
+                        <select id="new_project" required>
+                            <option value="">Select a Project...</option>
+                            <% projects.forEach(p => { %>
+                                <option value="<%= p._id %>"><%= p.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_priority">Priority</label>
+                        <select id="new_priority">
+                            <option value="low">Low Priority</option>
+                            <option value="medium" selected>Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_deadline">Deadline Target</label>
+                        <input type="date" id="new_deadline">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="new_desc">Task Description</label>
+                    <textarea id="new_desc" rows="4" placeholder="Detailed scope criteria, QA milestones, setup rules..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addTaskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Task -->
+    <div class="modal-backdrop" id="editTaskModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Task Details</h2>
+                <button class="modal-close" onclick="closeModal('editTaskModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="editTaskForm" class="modal-form">
+                <input type="hidden" id="edit_id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_title">Task Title *</label>
+                        <input type="text" id="edit_title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_project">Assign Project *</label>
+                        <select id="edit_project" required>
+                            <% projects.forEach(p => { %>
+                                <option value="<%= p._id %>"><%= p.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_priority">Priority</label>
+                        <select id="edit_priority">
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_deadline">Deadline Target</label>
+                        <input type="date" id="edit_deadline">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_status">Column Status</label>
+                        <select id="edit_status">
+                            <option value="todo">Todo</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit_desc">Task Description</label>
+                    <textarea id="edit_desc" rows="4"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editTaskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Modals -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-backdrop" id="confirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon danger" id="confirmIcon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="btn btn-danger" id="confirmExecuteBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side Scripts -->
+    <script>
+        lucide.createIcons();
+
+        // Menu Dropdown toggle inside board cards
+        function toggleCardMenu(id) {
+            const dropdown = document.getElementById(`menu-${id}`);
+            const isActive = dropdown.classList.contains('active');
+            
+            // Close all dropdowns first
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            
+            if (!isActive) {
+                dropdown.classList.add('active');
+            }
+        }
+
+        // Close dropdowns on document click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+        });
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirmation Dialog Helpers
+        let currentConfirmCallback = null;
+        function showConfirmDialog(title, message, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            currentConfirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+        function closeConfirmDialog() {
+            document.getElementById('confirmModal').classList.remove('active');
+            currentConfirmCallback = null;
+        }
+        document.getElementById('confirmExecuteBtn').addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            closeConfirmDialog();
+        });
+
+        // Close modal helper
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Add Task modal trigger
+        document.getElementById('openAddTaskBtn').addEventListener('click', () => {
+            document.getElementById('addTaskModal').classList.add('active');
+        });
+
+        // Add Task submission
+        document.getElementById('addTaskForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('new_title').value,
+                projectId: document.getElementById('new_project').value,
+                priority: document.getElementById('new_priority').value,
+                deadline: document.getElementById('new_deadline').value,
+                description: document.getElementById('new_desc').value
+            };
+
+            fetch('/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addTaskModal');
+                    document.getElementById('addTaskForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error creating task', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Open Edit Modal prefilled
+        function openEditModal(taskStr) {
+            const task = JSON.parse(taskStr);
+            document.getElementById('edit_id').value = task._id;
+            document.getElementById('edit_title').value = task.title;
+            document.getElementById('edit_project').value = task.projectId._id || task.projectId;
+            document.getElementById('edit_priority').value = task.priority;
+            document.getElementById('edit_status').value = task.status;
+            document.getElementById('edit_desc').value = task.description || '';
+
+            if (task.dueDate) {
+                const dateVal = new Date(task.dueDate).toISOString().split('T')[0];
+                document.getElementById('edit_deadline').value = dateVal;
+            } else {
+                document.getElementById('edit_deadline').value = '';
+            }
+
+            document.getElementById('editTaskModal').classList.add('active');
+        }
+
+        // Edit Task submit
+        document.getElementById('editTaskForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const payload = {
+                title: document.getElementById('edit_title').value,
+                projectId: document.getElementById('edit_project').value,
+                priority: document.getElementById('edit_priority').value,
+                deadline: document.getElementById('edit_deadline').value,
+                status: document.getElementById('edit_status').value,
+                description: document.getElementById('edit_desc').value
+            };
+
+            fetch(`/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('editTaskModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error updating task details', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Delete Task prompt
+        function deleteTaskPrompt(id, title) {
+            showConfirmDialog(
+                'Delete Task',
+                `Are you sure you want to delete task "${title}"? This action cannot be undone.`,
+                () => {
+                    fetch(`/tasks/${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            showToast(data.message || 'Error deleting task', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Server connection error', 'danger');
+                    });
+                }
+            );
+        }
+
+        // Transition Quick status helper
+        function transitionTask(id, targetStatus) {
+            updateStatus(id, targetStatus);
+        }
+
+        // Update status fetch utility
+        function updateStatus(id, targetStatus) {
+            fetch(`/tasks/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: targetStatus })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Error transitioning task', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        }
+
+        // HTML5 Drag and drop helpers
+        function drag(ev) {
+            ev.dataTransfer.setData("taskId", ev.target.dataset.taskId);
+            ev.target.classList.add('dragging');
+        }
+
+        // Visual dragover response
+        document.querySelectorAll('.board-column').forEach(column => {
+            column.addEventListener('dragover', (e) => {
+                column.classList.add('drag-over');
+            });
+            column.addEventListener('dragleave', (e) => {
+                column.classList.remove('drag-over');
+            });
+        });
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drop(ev, columnStatus) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData("taskId");
+            const column = ev.currentTarget;
+            column.classList.remove('drag-over');
+            
+            // Trigger status transition
+            updateStatus(taskId, columnStatus);
+        }
+    </script>
+</body>
+</html>

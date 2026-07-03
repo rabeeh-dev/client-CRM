@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Leads' },
+                    { label: lead.name, active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Action Header Panel -->
+                <section class="detail-action-header">
+                    <div class="lead-identity">
+                        <h1><%= lead.name %></h1>
+                        <div class="badges-row">
+                            <span class="status-badge status-<%= lead.status %>"><%= lead.status.replace('_', ' ') %></span>
+                            <span class="priority-badge priority-<%= lead.priority %>"><%= lead.priority %> Priority</span>
+                        </div>
+                    </div>
+                    
+                    <div class="header-buttons">
+                        <a href="/leads" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            <span>Back to List</span>
+                        </a>
+                        <button class="btn btn-secondary" id="openEditLeadBtn">
+                            <i data-lucide="edit"></i>
+                            <span>Edit</span>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteLeadPrompt('<%= lead._id %>', '<%= lead.name %>')">
+                            <i data-lucide="trash-2"></i>
+                            <span>Delete</span>
+                        </button>
+                        <button class="btn btn-success" id="convertBtn">
+                            <i data-lucide="user-check"></i>
+                            <span>Convert to Client</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Two-Column Layout -->
+                <div class="content-split">
+                    <!-- Left: Metadata Details -->
+                    <div class="split-left">
+                        
+                        <!-- Contact Information -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Contact Information</h2>
+                            </div>
+                            <div class="panel-content details-list">
+                                <div class="detail-row">
+                                    <span class="label">Email Address</span>
+                                    <span class="val"><%= lead.email || 'Not Provided' %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Phone Number</span>
+                                    <span class="val"><%= lead.phone || 'Not Provided' %></span>
+                                </div>
+                                <!-- Social Profiles Section -->
+                                <% if (lead.socialMedia && (lead.socialMedia.linkedin || lead.socialMedia.twitter || lead.socialMedia.instagram || lead.socialMedia.whatsapp)) { %>
+                                    <div class="detail-row social-row">
+                                        <span class="label">Social Links</span>
+                                        <span class="val social-links">
+                                            <% if (lead.socialMedia.linkedin) { %>
+                                                <a href="<%= lead.socialMedia.linkedin %>" target="_blank" title="LinkedIn" class="social-icon linkedin">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                                                </a>
+                                            <% } %>
+                                            <% if (lead.socialMedia.twitter) { %>
+                                                <a href="<%= lead.socialMedia.twitter %>" target="_blank" title="Twitter/X" class="social-icon twitter">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+                                                </a>
+                                            <% } %>
+                                            <% if (lead.socialMedia.instagram) { %>
+                                                <a href="<%= lead.socialMedia.instagram %>" target="_blank" title="Instagram" class="social-icon instagram">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                                                </a>
+                                            <% } %>
+                                            <% if (lead.socialMedia.whatsapp) { %>
+                                                <a href="<%= lead.socialMedia.whatsapp %>" target="_blank" title="WhatsApp" class="social-icon whatsapp">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                                </a>
+                                            <% } %>
+                                        </span>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Company Details -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Company Information</h2>
+                            </div>
+                            <div class="panel-content details-list">
+                                <div class="detail-row">
+                                    <span class="label">Company Name</span>
+                                    <span class="val"><%= lead.company || 'Individual Freelancer' %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Acquisition Source</span>
+                                    <span class="val text-capitalize"><%= lead.source.replace('_', ' ') %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Estimated Value</span>
+                                    <span class="val amount-text"><%= lead.estimatedValue.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lead Private Notes -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Lead Notes</h2>
+                            </div>
+                            <div class="panel-content">
+                                <div class="rich-notes-box">
+                                    <p><%= lead.notes %></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Timelines & Follow-ups -->
+                    <div class="split-right">
+                        
+                        <!-- Tabs Navigation -->
+                        <div class="tab-container">
+                            <div class="tab-header">
+                                <button class="tab-btn active" onclick="switchTab(event, 'timelineTab')">Timeline</button>
+                                <button class="tab-btn" onclick="switchTab(event, 'followupsTab')">Follow-ups</button>
+                            </div>
+
+                            <div class="tab-content active" id="timelineTab">
+                                <div class="timeline-actions">
+                                    <button class="btn btn-secondary btn-sm" id="openLogIntBtn">
+                                        <i data-lucide="plus"></i>
+                                        <span>Log Interaction</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="timeline">
+                                    <% lead.interactions.forEach(interaction => { %>
+                                        <div class="timeline-item">
+                                            <div class="timeline-icon">
+                                                <i data-lucide="<%= interaction.type === 'call' ? 'phone' : (interaction.type === 'email' ? 'mail' : 'users') %>"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <div class="timeline-meta">
+                                                    <span class="action text-capitalize"><%= interaction.type %> Logged</span>
+                                                    <span class="time"><%= new Date(interaction.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                                                </div>
+                                                <p class="desc"><%= interaction.description %></p>
+                                            </div>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            </div>
+
+                            <div class="tab-content" id="followupsTab">
+                                <div class="timeline-actions">
+                                    <button class="btn btn-secondary btn-sm" id="openAddFolBtn">
+                                        <i data-lucide="plus"></i>
+                                        <span>Add Follow-up</span>
+                                    </button>
+                                </div>
+
+                                <ul class="followup-list">
+                                    <% if (lead.followUps.length === 0) { %>
+                                        <div class="empty-state-small">
+                                            <p>No pending follow-ups for this lead.</p>
+                                        </div>
+                                    <% } else { %>
+                                        <% lead.followUps.forEach(followUp => { %>
+                                            <li class="followup-item <%= followUp.isCompleted ? 'completed' : '' %>">
+                                                <label class="task-checkbox">
+                                                    <input type="checkbox" <%= followUp.isCompleted ? 'checked' : '' %> onchange="toggleFollowUpState('<%= followUp._id %>', this.checked)">
+                                                    <span class="checkbox-box"></span>
+                                                </label>
+                                                <div class="followup-info">
+                                                    <span class="followup-note"><%= followUp.note %></span>
+                                                    <span class="followup-date">Due: <%= new Date(followUp.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span>
+                                                </div>
+                                            </li>
+                                        <% }) %>
+                                    <% } %>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Convert to Client Modal Mock -->
+    <div class="modal-backdrop" id="convertModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Convert Lead to Client</h2>
+                <button class="modal-close" onclick="closeModal('convertModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form action="#" class="modal-form" onsubmit="event.preventDefault(); showToast('Opportunity converted successfully! Redirecting...', 'success'); setTimeout(() => window.location.href='/leads', 1500);">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="c_name">Client Contact Person *</label>
+                        <input type="text" id="c_name" value="<%= lead.name %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="c_email">Client Email Address *</label>
+                        <input type="email" id="c_email" value="<%= lead.email %>" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="c_phone">Phone Number</label>
+                        <input type="text" id="c_phone" value="<%= lead.phone %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="c_company">Company / Client Brand</label>
+                        <input type="text" id="c_company" value="<%= lead.company || '' %>">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="c_currency">Client Preferred Currency</label>
+                        <select id="c_currency">
+                            <option value="INR" selected>INR (₹)</option>
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="c_terms">Payment Terms (Days)</label>
+                        <input type="number" id="c_terms" value="30" min="0">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('convertModal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Convert Opportunity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div class="modal-backdrop" id="editLeadModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Lead Information</h2>
+                <button class="modal-close" onclick="closeModal('editLeadModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="editLeadForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_name">Full Name *</label>
+                        <input type="text" id="edit_name" value="<%= lead.name %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email">Email Address</label>
+                        <input type="email" id="edit_email" value="<%= lead.email || '' %>">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_phone">Phone Number</label>
+                        <input type="text" id="edit_phone" value="<%= lead.phone || '' %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_company">Company Name</label>
+                        <input type="text" id="edit_company" value="<%= lead.company || '' %>">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_status">Pipeline Stage</label>
+                        <select id="edit_status">
+                            <option value="new" <%= lead.status === 'new' ? 'selected' : '' %>>New</option>
+                            <option value="contacted" <%= lead.status === 'contacted' ? 'selected' : '' %>>Contacted</option>
+                            <option value="proposal_sent" <%= lead.status === 'proposal_sent' ? 'selected' : '' %>>Proposal Sent</option>
+                            <option value="negotiation" <%= lead.status === 'negotiation' ? 'selected' : '' %>>Negotiation</option>
+                            <option value="won" <%= lead.status === 'won' ? 'selected' : '' %>>Won</option>
+                            <option value="lost" <%= lead.status === 'lost' ? 'selected' : '' %>>Lost</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_priority">Priority</label>
+                        <select id="edit_priority">
+                            <option value="low" <%= lead.priority === 'low' ? 'selected' : '' %>>Low</option>
+                            <option value="medium" <%= lead.priority === 'medium' ? 'selected' : '' %>>Medium</option>
+                            <option value="high" <%= lead.priority === 'high' ? 'selected' : '' %>>High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_value">Estimated Value (₹)</label>
+                        <input type="number" id="edit_value" value="<%= lead.estimatedValue %>" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_source">Acquisition Source</label>
+                        <select id="edit_source">
+                            <option value="referral" <%= lead.source === 'referral' ? 'selected' : '' %>>Referral</option>
+                            <option value="website" <%= lead.source === 'website' ? 'selected' : '' %>>Website Form</option>
+                            <option value="social_media" <%= lead.source === 'social_media' ? 'selected' : '' %>>Social Media</option>
+                            <option value="cold_outreach" <%= lead.source === 'cold_outreach' ? 'selected' : '' %>>Cold Outreach</option>
+                            <option value="event" <%= lead.source === 'event' ? 'selected' : '' %>>Event/Gala</option>
+                            <option value="other" <%= lead.source === 'other' ? 'selected' : '' %>>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Added Social Media Inputs (Edit) -->
+                <div class="form-section-title">Social Links</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_linkedin">LinkedIn URL</label>
+                        <input type="url" id="edit_linkedin" value="<%= (lead.socialMedia && lead.socialMedia.linkedin) || '' %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_twitter">Twitter/X URL</label>
+                        <input type="url" id="edit_twitter" value="<%= (lead.socialMedia && lead.socialMedia.twitter) || '' %>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_instagram">Instagram URL</label>
+                        <input type="url" id="edit_instagram" value="<%= (lead.socialMedia && lead.socialMedia.instagram) || '' %>">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_whatsapp">WhatsApp Direct Link / Phone</label>
+                        <input type="url" id="edit_whatsapp" value="<%= (lead.socialMedia && lead.socialMedia.whatsapp) || '' %>">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_notes">Notes</label>
+                    <textarea id="edit_notes" rows="3"><%= lead.notes || '' %></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editLeadModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Interaction Modal -->
+    <div class="modal-backdrop" id="logInteractionModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Log Client Interaction</h2>
+                <button class="modal-close" onclick="closeModal('logInteractionModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="logInteractionForm" class="modal-form">
+                <div class="form-group">
+                    <label for="int_type">Interaction Type *</label>
+                    <select id="int_type" required>
+                        <option value="call">Phone Call</option>
+                        <option value="email">Email</option>
+                        <option value="meeting">In-Person Meeting</option>
+                        <option value="note">Internal Note</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="int_date">Interaction Date</label>
+                    <input type="datetime-local" id="int_date">
+                </div>
+                <div class="form-group">
+                    <label for="int_desc">Description / Summary *</label>
+                    <textarea id="int_desc" rows="4" placeholder="Summarise discussion points..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('logInteractionModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Log Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Follow-up Modal -->
+    <div class="modal-backdrop" id="addFollowUpModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Add Follow-up Reminder</h2>
+                <button class="modal-close" onclick="closeModal('addFollowUpModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addFollowUpForm" class="modal-form">
+                <div class="form-group">
+                    <label for="fol_date">Reminder Date *</label>
+                    <input type="date" id="fol_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="fol_note">Follow-up Note / Description</label>
+                    <textarea id="fol_note" rows="3" placeholder="What needs to be followed up?"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addFollowUpModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule Reminder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Modals -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-backdrop" id="confirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon danger" id="confirmIcon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="btn btn-danger" id="confirmExecuteBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Init -->
+    <script>
+        lucide.createIcons();
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Slide out after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirmation Dialog Helpers
+        let currentConfirmCallback = null;
+        function showConfirmDialog(title, message, onConfirm, isDanger = true) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            
+            const icon = document.getElementById('confirmIcon');
+            if (isDanger) {
+                icon.className = 'confirm-icon danger';
+            } else {
+                icon.className = 'confirm-icon';
+            }
+            
+            document.getElementById('confirmModal').classList.add('active');
+            currentConfirmCallback = onConfirm;
+        }
+
+        function closeConfirmDialog() {
+            document.getElementById('confirmModal').classList.remove('active');
+            currentConfirmCallback = null;
+        }
+
+        document.getElementById('confirmExecuteBtn').addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            closeConfirmDialog();
+        });
+
+        function deleteLeadPrompt(id, name) {
+            showConfirmDialog(
+                'Delete Lead',
+                `Are you sure you want to delete lead "${name}"? This action cannot be undone.`,
+                () => {
+                    fetch(`/leads/${id}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'danger');
+                            setTimeout(() => window.location.href = '/leads', 1200);
+                        } else {
+                            showToast(data.message || 'Error deleting lead', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Server connection error during deletion', 'danger');
+                    });
+                },
+                true
+            );
+        }
+
+        // Log Interaction Trigger
+        document.getElementById('openLogIntBtn').addEventListener('click', () => {
+            // Set default date to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('int_date').value = now.toISOString().slice(0, 16);
+            document.getElementById('logInteractionModal').classList.add('active');
+        });
+
+        // Log Interaction Submit
+        document.getElementById('logInteractionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                type: document.getElementById('int_type').value,
+                date: document.getElementById('int_date').value,
+                description: document.getElementById('int_desc').value
+            };
+            fetch('/leads/<%= lead._id %>/interactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('logInteractionModal');
+                    document.getElementById('logInteractionForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error logging event', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Add Follow-up Trigger
+        document.getElementById('openAddFolBtn').addEventListener('click', () => {
+            document.getElementById('addFollowUpModal').classList.add('active');
+        });
+
+        // Add Follow-up Submit
+        document.getElementById('addFollowUpForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                date: document.getElementById('fol_date').value,
+                note: document.getElementById('fol_note').value
+            };
+            fetch('/leads/<%= lead._id %>/followups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addFollowUpModal');
+                    document.getElementById('addFollowUpForm').reset();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error scheduling reminder', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Edit Lead Trigger
+        document.getElementById('openEditLeadBtn').addEventListener('click', () => {
+            document.getElementById('editLeadModal').classList.add('active');
+        });
+
+        // Edit Lead Submit
+        document.getElementById('editLeadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('edit_name').value,
+                email: document.getElementById('edit_email').value,
+                phone: document.getElementById('edit_phone').value,
+                company: document.getElementById('edit_company').value,
+                status: document.getElementById('edit_status').value,
+                priority: document.getElementById('edit_priority').value,
+                estimatedValue: document.getElementById('edit_value').value,
+                source: document.getElementById('edit_source').value,
+                linkedin: document.getElementById('edit_linkedin').value,
+                twitter: document.getElementById('edit_twitter').value,
+                instagram: document.getElementById('edit_instagram').value,
+                whatsapp: document.getElementById('edit_whatsapp').value,
+                notes: document.getElementById('edit_notes').value
+            };
+
+            fetch('/leads/<%= lead._id %>', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('editLeadModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error updating lead', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
+        // Convert modal trigger
+        document.getElementById('convertBtn').addEventListener('click', () => {
+            document.getElementById('convertModal').classList.add('active');
+        });
+
+        // Close modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Tab switcher
+        function switchTab(evt, tabId) {
+            const contents = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-btn');
+
+            contents.forEach(c => c.classList.remove('active'));
+            buttons.forEach(b => b.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Toggle follow-up completion status
+        function toggleFollowUpState(followupId, isChecked) {
+            fetch('/leads/<%= lead._id %>/followups/' + followupId + '/toggle', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isCompleted: isChecked })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Find the followup item element and toggle its completed class
+                    const checkbox = document.querySelector(`input[onchange*="${followupId}"]`);
+                    if (checkbox) {
+                        const item = checkbox.closest('.followup-item');
+                        if (item) {
+                            if (isChecked) {
+                                item.classList.add('completed');
+                            } else {
+                                item.classList.remove('completed');
+                            }
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Error updating status', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        }
+    </script>
+</body>
+</html>

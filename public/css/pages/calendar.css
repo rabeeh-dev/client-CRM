@@ -1,0 +1,305 @@
+/* Premium CRM Schedule Calendar Stylesheet */
+
+/* Controls Toolbar */
+.calendar-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--border-color);
+    padding: 14px 20px;
+    border-radius: 12px;
+}
+
+.calendar-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.calendar-title-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+}
+
+/* Event Types Legend Panel */
+.calendar-legend-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.005);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.legend-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.legend-color-dot.meeting { background: #a855f7; }
+.legend-color-dot.deadline { background: var(--danger); }
+.legend-color-dot.payment { background: var(--success); }
+.legend-color-dot.followup { background: var(--warning); }
+.legend-color-dot.task { background: #3b82f6; }
+
+/* MONTH GRID LAYOUT */
+.month-grid-wrapper {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.005);
+}
+
+.month-grid-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.month-grid-header div {
+    padding: 12px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.month-days-container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 120px);
+}
+
+.calendar-day-cell {
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    position: relative;
+    transition: var(--transition);
+}
+
+.calendar-day-cell:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day-cell:nth-last-child(-n+7) {
+    border-bottom: none;
+}
+
+.calendar-day-cell:hover {
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+.calendar-day-cell.is-padding {
+    background-color: rgba(255, 255, 255, 0.003);
+}
+
+.calendar-day-cell.is-padding .day-number-label {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.day-number-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+}
+
+.calendar-day-cell.is-today .day-number-label {
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 0 8px rgba(79, 70, 229, 0.4);
+}
+
+/* Event badges in Month view cells */
+.cell-event-item {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.cell-event-item:hover {
+    transform: translateY(-0.5px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.15);
+}
+
+.cell-event-item.event-meeting {
+    background: rgba(168, 85, 247, 0.08);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.15);
+}
+.cell-event-item.event-deadline {
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.15);
+}
+.cell-event-item.event-payment {
+    background: rgba(16, 185, 129, 0.08);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.cell-event-item.event-followup {
+    background: rgba(245, 158, 11, 0.08);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.15);
+}
+.cell-event-item.event-task {
+    background: rgba(59, 130, 246, 0.08);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+/* WEEK VIEW LAYOUT */
+.week-grid-container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 16px;
+    align-items: start;
+    margin-top: 10px;
+}
+
+.week-day-column {
+    background: rgba(255, 255, 255, 0.008);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 480px;
+    transition: var(--transition);
+}
+
+.week-day-column.is-today {
+    background: rgba(79, 70, 229, 0.02);
+    border-color: rgba(79, 70, 229, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.week-day-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+.week-day-header h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.week-day-header .date-num {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+}
+
+.week-day-column.is-today .week-day-header .date-num {
+    color: var(--primary);
+}
+
+/* Event cards inside week columns */
+.week-event-card {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.week-event-card:hover {
+    transform: translateY(-1.5px);
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.week-event-card h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    line-height: 1.3;
+}
+
+.week-event-card .time {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.week-event-card .type-badge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+.week-event-card.event-meeting { border-left: 3px solid #a855f7; }
+.week-event-card.event-meeting .type-badge { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+
+.week-event-card.event-deadline { border-left: 3px solid var(--danger); }
+.week-event-card.event-deadline .type-badge { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+
+.week-event-card.event-payment { border-left: 3px solid var(--success); }
+.week-event-card.event-payment .type-badge { background: rgba(16, 185, 129, 0.12); color: #34d399; }
+
+.week-event-card.event-followup { border-left: 3px solid var(--warning); }
+.week-event-card.event-followup .type-badge { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+
+.week-event-card.event-task { border-left: 3px solid #3b82f6; }
+.week-event-card.event-task .type-badge { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }

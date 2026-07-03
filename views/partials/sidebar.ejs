@@ -1,0 +1,82 @@
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-logo">
+            <i data-lucide="layers"></i>
+        </div>
+        <div class="brand-text">
+            <h2>Client Workspace</h2>
+            <span>OPERATING SYSTEM</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="nav-list">
+            <li>
+                <a href="/dashboard" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active' : '' %>">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="/leads" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'leads' ? 'active' : '' %>">
+                    <i data-lucide="git-pull-request"></i>
+                    <span>Leads</span>
+                </a>
+            </li>
+            <li>
+                <a href="/clients" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'clients' ? 'active' : '' %>">
+                    <i data-lucide="building-2"></i>
+                    <span>Clients</span>
+                </a>
+            </li>
+            <li>
+                <a href="/projects" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'projects' ? 'active' : '' %>">
+                    <i data-lucide="folder"></i>
+                    <span>Projects</span>
+                </a>
+            </li>
+            <li>
+                <a href="/tasks" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'tasks' ? 'active' : '' %>">
+                    <i data-lucide="check-square"></i>
+                    <span>Tasks</span>
+                </a>
+            </li>
+            <li>
+                <a href="/calendar" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'calendar' ? 'active' : '' %>">
+                    <i data-lucide="calendar"></i>
+                    <span>Calendar</span>
+                </a>
+            </li>
+            <li>
+                <a href="/payments" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'payments' ? 'active' : '' %>">
+                    <i data-lucide="credit-card"></i>
+                    <span>Payments</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/emails" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'emails' ? 'active' : '' %>">
+                    <i data-lucide="mail"></i>
+                    <span>Emails</span>
+                </a>
+            </li>
+            <li>
+                <a href="/analytics" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'analytics' ? 'active' : '' %>">
+                    <i data-lucide="bar-chart-2"></i>
+                    <span>Analytics</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <a href="/settings" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'settings' ? 'active' : '' %>">
+            <i data-lucide="settings"></i>
+            <span>Settings</span>
+        </a>
+        <a href="/logout" class="nav-item logout-link">
+            <i data-lucide="log-out"></i>
+            <span>Sign Out</span>
+        </a>
+    </div>
+</aside>

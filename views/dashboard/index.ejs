@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/dashboard.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <!-- Main App Layout -->
+    <div class="app-layout">
+        
+        <!-- Sidebar Panel -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Dashboard', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Welcome Section -->
+                <section class="welcome-banner">
+                    <div class="welcome-text">
+                        <h1>Welcome back, <%= user ? user.firstName : 'Admin' %>!</h1>
+                        <p>Here is an overview of your freelance business metrics and deliverables for today.</p>
+                    </div>
+                    <div class="welcome-date">
+                        <i data-lucide="calendar"></i>
+                        <span id="currentDate">July 2, 2026</span>
+                    </div>
+                </section>
+
+                <!-- Aggregated Status Grid -->
+                <section class="status-grid">
+                    <div class="status-card">
+                        <div class="card-header">
+                            <span class="title">Active Clients</span>
+                            <div class="icon-box icon-clients">
+                                <i data-lucide="building-2"></i>
+                            </div>
+                        </div>
+                        <div class="card-value"><%= data.activeClients %></div>
+                        <div class="card-footer text-success">
+                            <i data-lucide="trending-up"></i>
+                            <span>+2 new this month</span>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="card-header">
+                            <span class="title">Active Projects</span>
+                            <div class="icon-box icon-projects">
+                                <i data-lucide="folder"></i>
+                            </div>
+                        </div>
+                        <div class="card-value"><%= data.activeProjects %></div>
+                        <div class="card-footer text-success">
+                            <i data-lucide="check"></i>
+                            <span>4 nearing completion</span>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="card-header">
+                            <span class="title">Pending Payments</span>
+                            <div class="icon-box icon-pending">
+                                <i data-lucide="clock"></i>
+                            </div>
+                        </div>
+                        <div class="card-value"><%= data.pendingPayments %></div>
+                        <div class="card-footer text-danger">
+                            <i data-lucide="alert-circle"></i>
+                            <span>3 payments overdue</span>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="card-header">
+                            <span class="title">Revenue This Month</span>
+                            <div class="icon-box icon-revenue">
+                                <i data-lucide="credit-card"></i>
+                            </div>
+                        </div>
+                        <div class="card-value"><%= data.revenueThisMonth %></div>
+                        <div class="card-footer text-success">
+                            <i data-lucide="trending-up"></i>
+                            <span>12% increase from June</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Split Content Layout -->
+                <div class="content-split">
+                    <!-- Left: Analytics & Timelines -->
+                    <div class="split-left">
+                        
+                        <!-- Revenue Trend Chart -->
+                        <div class="panel chart-panel">
+                            <div class="panel-header">
+                                <h2>Revenue Trend</h2>
+                                <span class="subtitle">Last 6 Months (Mocked)</span>
+                            </div>
+                            <div class="panel-content chart-container">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activities Log -->
+                        <div class="panel timeline-panel">
+                            <div class="panel-header">
+                                <h2>Recent Activities</h2>
+                                <span class="subtitle">Automatic Log Timeline</span>
+                            </div>
+                            <div class="panel-content">
+                                <div class="timeline">
+                                    <% data.activities.forEach(activity => { %>
+                                        <div class="timeline-item">
+                                            <div class="timeline-icon">
+                                                <i data-lucide="<%= activity.icon %>"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <div class="timeline-meta">
+                                                    <span class="action"><%= activity.action %></span>
+                                                    <span class="time"><%= activity.time %></span>
+                                                </div>
+                                                <p class="desc"><%= activity.description %></p>
+                                                <span class="client-badge"><%= activity.client %></span>
+                                            </div>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Checklist, Actions & Deadlines -->
+                    <div class="split-right">
+                        
+                        <!-- Quick Actions Panel -->
+                        <div class="panel actions-panel">
+                            <div class="panel-header">
+                                <h2>Quick Actions</h2>
+                            </div>
+                            <div class="panel-content actions-grid">
+                                <button class="action-tile" onclick="window.location.href='/leads'">
+                                    <i data-lucide="user-plus"></i>
+                                    <span>New Lead</span>
+                                </button>
+                                <button class="action-tile" onclick="window.location.href='/clients'">
+                                    <i data-lucide="building-2"></i>
+                                    <span>New Client</span>
+                                </button>
+                                <button class="action-tile" onclick="window.location.href='/projects'">
+                                    <i data-lucide="plus-circle"></i>
+                                    <span>New Project</span>
+                                </button>
+                                <button class="action-tile" onclick="window.location.href='/tasks'">
+                                    <i data-lucide="check-square"></i>
+                                    <span>New Task</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tasks Due Today -->
+                        <div class="panel tasks-panel">
+                            <div class="panel-header">
+                                <h2>Tasks Due Today</h2>
+                                <span class="badge"><%= data.tasks.length %> Tasks</span>
+                            </div>
+                            <div class="panel-content">
+                                <ul class="task-list">
+                                    <% data.tasks.forEach(task => { %>
+                                        <li class="task-item">
+                                            <div class="task-main">
+                                                <label class="task-checkbox">
+                                                    <input type="checkbox">
+                                                    <span class="checkbox-box"></span>
+                                                </label>
+                                                <div class="task-info">
+                                                    <span class="task-title"><%= task.title %></span>
+                                                    <span class="task-project"><%= task.project %></span>
+                                                </div>
+                                            </div>
+                                            <div class="task-meta">
+                                                <span class="task-priority priority-<%= task.priority %>"><%= task.priority %></span>
+                                                <span class="task-due"><%= task.due %></span>
+                                            </div>
+                                        </li>
+                                    <% }) %>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Deadlines -->
+                        <div class="panel deadlines-panel">
+                            <div class="panel-header">
+                                <h2>Upcoming Deadlines</h2>
+                            </div>
+                            <div class="panel-content">
+                                <ul class="deadline-list">
+                                    <% data.deadlines.forEach(deadline => { %>
+                                        <li class="deadline-item">
+                                            <div class="deadline-left">
+                                                <div class="deadline-icon-box deadline-<%= deadline.type %>">
+                                                    <i data-lucide="<%= deadline.type === 'contract' ? 'file-text' : (deadline.type === 'design' ? 'palette' : 'archive') %>"></i>
+                                                </div>
+                                                <div class="deadline-info">
+                                                    <span class="deadline-name"><%= deadline.name %></span>
+                                                    <span class="deadline-project"><%= deadline.project %></span>
+                                                </div>
+                                            </div>
+                                            <div class="deadline-date">
+                                                <span><%= deadline.date %></span>
+                                            </div>
+                                        </li>
+                                    <% }) %>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Script Init -->
+    <script>
+        lucide.createIcons();
+
+        // Format Date
+        const d = new Date();
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById('currentDate').innerText = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+
+        const chartLabels = <%- JSON.stringify(data.chartLabels) %>;
+        const chartData = <%- JSON.stringify(data.chartData) %>;
+
+        // Initialize Revenue Line Chart via Chart.js
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: chartData,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#818cf8',
+                    pointBorderColor: '#0d1122',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.03)'
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: {
+                                family: 'Outfit'
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.03)'
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            font: {
+                                family: 'Outfit'
+                            },
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

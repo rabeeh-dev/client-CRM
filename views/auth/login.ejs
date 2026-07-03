@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/login.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="background-grid"></div>
+    <div class="gradient-glow glow-1"></div>
+    <div class="gradient-glow glow-2"></div>
+
+    <main class="login-wrapper">
+        <div class="login-card">
+            <div class="logo-area">
+                <div class="logo-box">
+                    <i data-lucide="layers" class="logo-icon"></i>
+                </div>
+                <h1>Client Workspace</h1>
+                <p class="subtitle">Freelancer Operating System</p>
+            </div>
+
+            <% if (alert) { %>
+                <div class="alert alert-<%= alert.type %>" role="alert">
+                    <i data-lucide="alert-circle" class="alert-icon"></i>
+                    <span><%= alert.message %></span>
+                </div>
+            <% } %>
+
+            <form action="/login" method="POST" class="login-form" novalidate id="loginForm">
+                <div class="input-group <%= errors.username ? 'has-error' : '' %>">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            value="<%= username %>" 
+                            placeholder="Enter your username"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    <% if (errors.username) { %>
+                        <span class="error-text"><%= errors.username %></span>
+                    <% } %>
+                </div>
+
+                <div class="input-group <%= errors.password ? 'has-error' : '' %>">
+                    <div class="label-row">
+                        <label for="password">Password</label>
+                    </div>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="••••••••"
+                            required
+                        >
+                        <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle Password Visibility">
+                            <i data-lucide="eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                    <% if (errors.password) { %>
+                        <span class="error-text"><%= errors.password %></span>
+                    <% } %>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" name="remember" id="remember">
+                        <span class="checkmark"></span>
+                        <span class="label-text">Remember Me</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnSubmit">
+                    <span>Sign In</span>
+                    <i data-lucide="arrow-right" class="btn-icon"></i>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Lucide Init & Page Script -->
+    <script>
+        lucide.createIcons();
+    </script>
+    <script src="/js/pages/login.js"></script>
+</body>
+</html>

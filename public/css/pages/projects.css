@@ -1,0 +1,275 @@
+/* Premium Projects Module Stylesheet */
+
+/* Project Metrics Summary Card Row */
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 30px;
+}
+
+/* Priority Badges */
+.priority-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+}
+.priority-badge.priority-high {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.priority-badge.priority-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.priority-badge.priority-low {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Linear Progress Bar */
+.progress-container {
+    margin-top: 14px;
+    margin-bottom: 8px;
+}
+.progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 6px;
+}
+.progress-meta .percent {
+    color: white;
+    font-weight: 600;
+}
+.progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary) 0%, #6366f1 100%);
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Specific Card elements */
+.project-card-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+}
+.project-card-meta div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.project-card-meta .label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+}
+.project-card-meta .val {
+    font-size: 13px;
+    color: white;
+    font-weight: 500;
+}
+
+/* Circular Progress widget inside Details page */
+.progress-circle-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+}
+.circle-svg {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+.circle-svg svg {
+    width: 120px;
+    height: 120px;
+    transform: rotate(-90deg);
+}
+.circle-svg circle {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+}
+.circle-svg .circle-bg {
+    stroke: rgba(255, 255, 255, 0.05);
+}
+.circle-svg .circle-fill {
+    stroke: url(#progressGradient);
+    stroke-dasharray: 339.292;
+    stroke-dashoffset: 339.292;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.circle-text-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+}
+
+/* Interactive ChecklistMilestones styles */
+.milestones-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.milestone-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.01);
+    transition: var(--transition);
+    cursor: pointer;
+}
+.milestone-item:hover {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+.milestone-item.completed {
+    background: rgba(16, 185, 129, 0.02);
+    border-color: rgba(16, 185, 129, 0.12);
+}
+.milestone-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    outline: none;
+    flex-shrink: 0;
+}
+.milestone-item input[type="checkbox"]:checked {
+    border-color: var(--success);
+    background: var(--success);
+}
+.milestone-item input[type="checkbox"]:checked::after {
+    content: "";
+    display: block;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+.milestone-label {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+    transition: var(--transition);
+    user-select: none;
+}
+.milestone-item.completed .milestone-label {
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Tasks Tab custom layout */
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background-color: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: var(--transition);
+}
+.task-item:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.task-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.task-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    outline: none;
+    flex-shrink: 0;
+}
+.task-item input[type="checkbox"]:checked {
+    border-color: var(--primary);
+    background: var(--primary);
+}
+.task-item input[type="checkbox"]:checked::after {
+    content: "";
+    display: block;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+.task-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    transition: var(--transition);
+}
+.task-title.completed {
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.4);
+}
+.task-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.task-due {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}

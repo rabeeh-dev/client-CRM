@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/clients.css">
+    <link rel="stylesheet" href="/css/pages/payments.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Payments', link: '/payments' },
+                    { label: 'Invoice Details', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                
+                <!-- Action Header Panel -->
+                <section class="detail-action-header" style="margin-bottom: 24px;">
+                    <div class="lead-identity">
+                        <h1>Invoice #<%= payment.invoiceNumber %></h1>
+                        <div class="badges-row">
+                            <span class="status-badge status-<%= payment.status %>"><%= payment.status %></span>
+                        </div>
+                    </div>
+                    
+                    <div class="header-buttons">
+                        <a href="/payments" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            <span>Back to List</span>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Two-Column Grid Layout -->
+                <div class="content-split">
+                    
+                    <!-- LEFT COLUMN: Overview Cards -->
+                    <div class="split-left">
+                        
+                        <!-- Panel 1: Invoice Financial Summary -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Financial Summary</h2>
+                            </div>
+                            <div class="panel-content" style="padding-top: 10px;">
+                                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); padding: 18px; border-radius: 12px; display: flex; flex-direction: column; gap: 14px;">
+                                    <div>
+                                        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); letter-spacing: 0.5px;">Invoiced Amount</span>
+                                        <div style="font-size: 24px; font-weight: 700; color: white; margin-top: 4px; font-family: 'Outfit';">
+                                            <%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 14px;">
+                                        <div>
+                                            <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); letter-spacing: 0.5px;">Collected</span>
+                                            <div style="font-size: 16px; font-weight: 600; color: var(--success); margin-top: 2px; font-family: 'Outfit';">
+                                                <%= totalPaid.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); letter-spacing: 0.5px;">Remaining</span>
+                                            <div style="font-size: 16px; font-weight: 600; color: <%= remainingBalance > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.3)' %>; margin-top: 2px; font-family: 'Outfit';">
+                                                <%= remainingBalance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel 2: Client Details -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Client Account</h2>
+                            </div>
+                            <div class="panel-content details-list">
+                                <% if (payment.clientId) { %>
+                                    <div class="detail-row">
+                                        <span class="label">Contact Person</span>
+                                        <span class="val"><strong><%= payment.clientId.name %></strong></span>
+                                    </div>
+                                    <% if (payment.clientId.company) { %>
+                                        <div class="detail-row">
+                                            <span class="label">Company Name</span>
+                                            <span class="val"><%= payment.clientId.company %></span>
+                                        </div>
+                                    <% } %>
+                                    <% if (payment.clientId.email) { %>
+                                        <div class="detail-row">
+                                            <span class="label">Email Address</span>
+                                            <span class="val" style="color: var(--primary);"><%= payment.clientId.email %></span>
+                                        </div>
+                                    <% } %>
+                                    <% if (payment.clientId.phone) { %>
+                                        <div class="detail-row">
+                                            <span class="label">Phone Number</span>
+                                            <span class="val"><%= payment.clientId.phone %></span>
+                                        </div>
+                                    <% } %>
+                                <% } else { %>
+                                    <div style="padding: 10px 0; font-style: italic; color: rgba(255,255,255,0.3);">No client assigned</div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Panel 3: Project Association -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Project Workspace</h2>
+                            </div>
+                            <div class="panel-content details-list">
+                                <% if (payment.projectId) { %>
+                                    <div class="detail-row">
+                                        <span class="label">Project Title</span>
+                                        <span class="val"><strong><%= payment.projectId.name %></strong></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="label">Contract Value</span>
+                                        <span class="val amount-text">
+                                            <%= (payment.projectId.budget || payment.projectId.value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                                        </span>
+                                    </div>
+                                    <div style="margin-top: 14px;">
+                                        <a href="/projects/<%= payment.projectId._id %>" class="btn btn-secondary btn-sm" style="display: inline-flex; width: 100%; justify-content: center;">
+                                            <span>Open Project Workspace</span>
+                                        </a>
+                                    </div>
+                                <% } else { %>
+                                    <div style="padding: 10px 0; font-style: italic; color: rgba(255,255,255,0.3);">General Billing Invoice</div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Panel 4: Timeline Dates -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>Billing Timeline</h2>
+                            </div>
+                            <div class="panel-content details-list">
+                                <div class="detail-row">
+                                    <span class="label">Issued Date</span>
+                                    <span class="val"><%= new Date(payment.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Payment Due Date</span>
+                                    <span class="val"><%= new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span>
+                                </div>
+                                <% if (payment.paidDate) { %>
+                                    <div class="detail-row">
+                                        <span class="label">Settled On</span>
+                                        <span class="val" style="color: var(--success); font-weight: 600;"><%= new Date(payment.paidDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Transactions History & Logging Form -->
+                    <div class="split-right">
+                        
+                        <!-- Panel: Payment History -->
+                        <div class="panel" style="margin-bottom: 24px;">
+                            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <h2>Payment Installment History</h2>
+                                <span class="column-count" style="margin-left: 8px;"><%= payment.transactions.length %></span>
+                            </div>
+                            <div class="panel-content" style="padding-top: 14px;">
+                                <div class="transactions-list">
+                                    <% if (payment.transactions.length === 0) { %>
+                                        <div class="empty-state" style="padding: 40px 0; border: 1px dashed var(--border-color); background: rgba(255,255,255,0.002); border-radius: 8px;">
+                                            <i data-lucide="receipt" class="empty-icon" style="width: 32px; height: 32px; margin-bottom: 8px;"></i>
+                                            <h3>No transactions recorded</h3>
+                                            <p style="font-size: 12px; color: rgba(255,255,255,0.4);">No installment receipts have been logged towards this invoice yet.</p>
+                                        </div>
+                                    <% } else { %>
+                                        <% payment.transactions.sort((a,b) => b.date - a.date).forEach(trans => { %>
+                                            <div class="transaction-item">
+                                                <div class="transaction-left">
+                                                    <span class="date"><%= new Date(trans.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></span>
+                                                    <span class="method" style="margin-top: 4px;"><%= trans.method.replace('_', ' ') %></span>
+                                                    <% if (trans.notes) { %>
+                                                        <p class="notes">"<%= trans.notes %>"</p>
+                                                    <% } %>
+                                                </div>
+                                                <div class="transaction-right">
+                                                    <span class="amount" style="color: var(--success); font-weight: 600;">+ <%= trans.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Log Payment Installment -->
+                        <div class="panel">
+                            <% if (remainingBalance > 0) { %>
+                                <div class="panel-header">
+                                    <h2>Record Transaction Installment</h2>
+                                </div>
+                                <div class="panel-content" style="padding-top: 14px;">
+                                    <form id="addTransactionForm" class="modal-form" style="padding: 0; background: none; border: none; box-shadow: none;">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="trans_amount">Received Amount (₹) *</label>
+                                                <input type="number" id="trans_amount" placeholder="<%= remainingBalance %>" min="1" max="<%= remainingBalance %>" required>
+                                                <span style="font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; display: block;">Maximum balance remaining: ₹<%= remainingBalance.toLocaleString() %></span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="trans_date">Payment Date *</label>
+                                                <input type="date" id="trans_date" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="trans_method">Payment Method</label>
+                                                <select id="trans_method">
+                                                    <option value="bank_transfer" selected>Bank Transfer</option>
+                                                    <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
+                                                    <option value="card">Credit / Debit Card</option>
+                                                    <option value="cash">Cash</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="trans_notes">Transaction Notes</label>
+                                            <textarea id="trans_notes" rows="3" placeholder="Receipt reference number, installment description, notes..."></textarea>
+                                        </div>
+                                        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                            <button type="submit" class="btn btn-primary">Record Receipt</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            <% } else { %>
+                                <div class="panel-content" style="padding: 24px; display: flex; align-items: center; gap: 12px; background: rgba(16, 185, 129, 0.02); border-color: rgba(16, 185, 129, 0.15); border-radius: 12px;">
+                                    <i data-lucide="check-circle" style="width: 24px; height: 24px; color: var(--success); flex-shrink: 0;"></i>
+                                    <div>
+                                        <h4 style="font-size: 14px; font-weight: 600; color: white;">Invoice Settled in Full</h4>
+                                        <p style="font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px;">This invoice has been fully paid. There is no outstanding balance left on this billing record.</p>
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Client-side script -->
+    <script>
+        lucide.createIcons();
+
+        // Default Payment Date value to today
+        const transDateInput = document.getElementById('trans_date');
+        if (transDateInput) {
+            transDateInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Transaction installment submission
+        const transForm = document.getElementById('addTransactionForm');
+        if (transForm) {
+            transForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const payload = {
+                    amount: document.getElementById('trans_amount').value,
+                    date: document.getElementById('trans_date').value,
+                    method: document.getElementById('trans_method').value,
+                    notes: document.getElementById('trans_notes').value
+                };
+
+                fetch('/payments/<%= payment._id %>/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        showToast(data.message || 'Error recording transaction', 'danger');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Server connection error', 'danger');
+                });
+            });
+        }
+    </script>
+</body>
+</html>

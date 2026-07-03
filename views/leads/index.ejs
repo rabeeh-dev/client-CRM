@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar Navigation -->
+        <%- include('../partials/sidebar') %>
+
+        <!-- Main View Frame -->
+        <div class="view-frame">
+            <!-- Header Row -->
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Leads', active: true }
+                ]
+            }) %>
+
+            <!-- Scrollable View Body -->
+            <main class="view-body">
+                <!-- Header with Pipeline Summary Widgets -->
+                <section class="leads-header">
+                    <div>
+                        <h1>Leads Pipeline</h1>
+                        <p>Manage prospects and follow-ups to convert opportunities into clients.</p>
+                    </div>
+                    <button class="btn btn-primary" id="openAddLeadBtn">
+                        <i data-lucide="plus"></i>
+                        <span>Add New Lead</span>
+                    </button>
+                </section>
+
+                <!-- Pipeline Metrics -->
+                <section class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="title">Active Pipeline Value</span>
+                        <div class="value"><%= metrics.pipelineValue %></div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Lead Conversion Rate</span>
+                        <div class="value"><%= metrics.conversionRate %>%</div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Active Opportunities</span>
+                        <div class="value"><%= metrics.activeCount %> Leads</div>
+                    </div>
+                </section>
+
+                <!-- Filters & Search Bar -->
+                <section class="filter-panel">
+                    <form action="/leads" method="GET" class="filter-form">
+                        <div class="search-input">
+                            <i data-lucide="search"></i>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                placeholder="Search leads by name, company..." 
+                                value="<%= filters.search %>"
+                            >
+                        </div>
+                        
+                        <div class="select-wrapper">
+                            <select name="priority" onchange="this.form.submit()">
+                                <option value="all" <%= filters.priority === 'all' ? 'selected' : '' %>>All Priorities</option>
+                                <option value="low" <%= filters.priority === 'low' ? 'selected' : '' %>>Low Priority</option>
+                                <option value="medium" <%= filters.priority === 'medium' ? 'selected' : '' %>>Medium Priority</option>
+                                <option value="high" <%= filters.priority === 'high' ? 'selected' : '' %>>High Priority</option>
+                            </select>
+                        </div>
+
+                        <div class="select-wrapper">
+                            <select name="source" onchange="this.form.submit()">
+                                <option value="all" <%= filters.source === 'all' ? 'selected' : '' %>>All Sources</option>
+                                <option value="referral" <%= filters.source === 'referral' ? 'selected' : '' %>>Referrals</option>
+                                <option value="website" <%= filters.source === 'website' ? 'selected' : '' %>>Website Forms</option>
+                                <option value="social_media" <%= filters.source === 'social_media' ? 'selected' : '' %>>Social Media</option>
+                                <option value="cold_outreach" <%= filters.source === 'cold_outreach' ? 'selected' : '' %>>Cold Outreach</option>
+                                <option value="event" <%= filters.source === 'event' ? 'selected' : '' %>>Events/Gala</option>
+                                <option value="other" <%= filters.source === 'other' ? 'selected' : '' %>>Other</option>
+                            </select>
+                        </div>
+                        
+                        <% if (filters.search || filters.priority !== 'all' || filters.source !== 'all') { %>
+                            <a href="/leads" class="btn btn-clear">Clear Filters</a>
+                        <% } %>
+                    </form>
+                </section>
+
+                <!-- Leads Grid/List -->
+                <section class="leads-grid">
+                    <% if (leads.length === 0) { %>
+                        <div class="empty-state">
+                            <i data-lucide="users" class="empty-icon"></i>
+                            <h3>No leads found</h3>
+                            <p>Try modifying your search queries or filter selections, or create a new lead.</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('openAddLeadBtn').click()">Add Lead</button>
+                        </div>
+                    <% } else { %>
+                        <% leads.forEach(lead => { %>
+                            <div class="lead-card status-<%= lead.status %>" onclick="window.location.href='/leads/<%= lead._id %>'" style="cursor: pointer;">
+                                <div class="card-header">
+                                    <div class="lead-meta">
+                                        <span class="status-badge"><%= lead.status.replace('_', ' ') %></span>
+                                        <span class="priority-badge priority-<%= lead.priority %>"><%= lead.priority %></span>
+                                    </div>
+                                    <button class="dropdown-trigger" onclick="event.stopPropagation(); toggleCardMenu('<%= lead._id %>')">
+                                        <i data-lucide="more-vertical"></i>
+                                    </button>
+                                    <div class="dropdown-menu" id="menu-<%= lead._id %>">
+                                        <a href="/leads/<%= lead._id %>">View Details</a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal('<%= JSON.stringify(lead) %>')">Edit Lead</a>
+                                        <a href="#" class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); deleteLeadPrompt('<%= lead._id %>', '<%= lead.name %>')">Delete Lead</a>
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <h3 class="name"><%= lead.name %></h3>
+                                    <span class="company"><%= lead.company || 'Individual Freelancer' %></span>
+                                    <p class="notes-preview"><%= lead.notes ? lead.notes.replace(/<[^>]*>/g, '').substring(0, 100) : 'No notes recorded.' %>...</p>
+                                </div>
+
+                                <div class="card-footer">
+                                    <div class="value">
+                                        <span class="label">Est. Value</span>
+                                        <span class="amount"><%= lead.estimatedValue.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
+                                    </div>
+                                    <div class="followup">
+                                        <span class="label">Follow-up</span>
+                                        <span class="date"><%= lead.followUps.length > 0 ? new Date(lead.followUps[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'None' %></span>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    <% } %>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals Section -->
+
+    <!-- Add Lead Modal -->
+    <div class="modal-backdrop" id="addLeadModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Create New Lead</h2>
+                <button class="modal-close" onclick="closeModal('addLeadModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="addLeadForm" class="modal-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_name">Full Name *</label>
+                        <input type="text" id="add_name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add_email">Email Address</label>
+                        <input type="email" id="add_email" placeholder="john@domain.com">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_phone">Phone Number</label>
+                        <input type="text" id="add_phone" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_company">Company Name</label>
+                        <input type="text" id="add_company" placeholder="Acme Corp">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_source">Acquisition Source</label>
+                        <select id="add_source">
+                            <option value="referral">Referral</option>
+                            <option value="website">Website Form</option>
+                            <option value="social_media">Social Media</option>
+                            <option value="cold_outreach">Cold Outreach</option>
+                            <option value="event">Event/Gala</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="add_priority">Priority</label>
+                        <select id="add_priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_value">Estimated Value (₹)</label>
+                        <input type="number" id="add_value" placeholder="100000" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_followup">Follow-up Date</label>
+                        <input type="date" id="add_followup">
+                    </div>
+                </div>
+
+                <!-- Added Social Media Inputs -->
+                <div class="form-section-title">Social Links</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_linkedin">LinkedIn URL</label>
+                        <input type="url" id="add_linkedin" placeholder="https://linkedin.com/in/username">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_twitter">Twitter/X URL</label>
+                        <input type="url" id="add_twitter" placeholder="https://twitter.com/username">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_instagram">Instagram URL</label>
+                        <input type="url" id="add_instagram" placeholder="https://instagram.com/username">
+                    </div>
+                    <div class="form-group">
+                        <label for="add_whatsapp">WhatsApp Direct Link / Phone</label>
+                        <input type="url" id="add_whatsapp" placeholder="https://wa.me/919876543210">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="add_notes">Notes</label>
+                    <textarea id="add_notes" rows="3" placeholder="Record initial context, deliverables desired, etc."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addLeadModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div class="modal-backdrop" id="editLeadModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Lead Information</h2>
+                <button class="modal-close" onclick="closeModal('editLeadModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form action="#" class="modal-form" onsubmit="event.preventDefault(); showToast('Lead changes saved (Placeholder)', 'success'); closeModal('editLeadModal');">
+                <input type="hidden" id="edit_id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_name">Full Name *</label>
+                        <input type="text" id="edit_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email">Email Address</label>
+                        <input type="email" id="edit_email">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_phone">Phone Number</label>
+                        <input type="text" id="edit_phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_company">Company Name</label>
+                        <input type="text" id="edit_company">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_status">Pipeline Stage</label>
+                        <select id="edit_status">
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="proposal_sent">Proposal Sent</option>
+                            <option value="negotiation">Negotiation</option>
+                            <option value="won">Won</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_priority">Priority</label>
+                        <select id="edit_priority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_value">Estimated Value (₹)</label>
+                        <input type="number" id="edit_value" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_source">Acquisition Source</label>
+                        <select id="edit_source">
+                            <option value="referral">Referral</option>
+                            <option value="website">Website Form</option>
+                            <option value="social_media">Social Media</option>
+                            <option value="cold_outreach">Cold Outreach</option>
+                            <option value="event">Event/Gala</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Added Social Media Inputs (Edit) -->
+                <div class="form-section-title">Social Links</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_linkedin">LinkedIn URL</label>
+                        <input type="url" id="edit_linkedin">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_twitter">Twitter/X URL</label>
+                        <input type="url" id="edit_twitter">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit_instagram">Instagram URL</label>
+                        <input type="url" id="edit_instagram">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_whatsapp">WhatsApp Direct Link / Phone</label>
+                        <input type="url" id="edit_whatsapp">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_notes">Notes</label>
+                    <textarea id="edit_notes" rows="3"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editLeadModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Toast & Confirmation Modals -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="confirm-backdrop" id="confirmModal">
+        <div class="confirm-card">
+            <div class="confirm-icon danger" id="confirmIcon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+            <div class="confirm-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmDialog()">Cancel</button>
+                <button class="btn btn-danger" id="confirmExecuteBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Init -->
+    <script>
+        lucide.createIcons();
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            if (type === 'info') iconName = 'info';
+
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Slide out after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Confirmation Dialog Helpers
+        let currentConfirmCallback = null;
+        function showConfirmDialog(title, message, onConfirm, isDanger = true) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+            
+            const icon = document.getElementById('confirmIcon');
+            if (isDanger) {
+                icon.className = 'confirm-icon danger';
+            } else {
+                icon.className = 'confirm-icon';
+            }
+            
+            document.getElementById('confirmModal').classList.add('active');
+            currentConfirmCallback = onConfirm;
+        }
+
+        function closeConfirmDialog() {
+            document.getElementById('confirmModal').classList.remove('active');
+            currentConfirmCallback = null;
+        }
+
+        document.getElementById('confirmExecuteBtn').addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            closeConfirmDialog();
+        });
+
+        function deleteLeadPrompt(id, name) {
+            showConfirmDialog(
+                'Delete Lead',
+                `Are you sure you want to delete lead "${name}"? This action cannot be undone.`,
+                () => {
+                    fetch(`/leads/${id}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message, 'danger');
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            showToast(data.message || 'Error deleting lead', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Server connection error during deletion', 'danger');
+                    });
+                },
+                true
+            );
+        }
+
+        // Handle Add Lead Form Submission
+        document.getElementById('addLeadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const payload = {
+                name: document.getElementById('add_name').value,
+                email: document.getElementById('add_email').value,
+                phone: document.getElementById('add_phone').value,
+                company: document.getElementById('add_company').value,
+                source: document.getElementById('add_source').value,
+                priority: document.getElementById('add_priority').value,
+                estimatedValue: document.getElementById('add_value').value,
+                followup: document.getElementById('add_followup').value,
+                linkedin: document.getElementById('add_linkedin').value,
+                twitter: document.getElementById('add_twitter').value,
+                instagram: document.getElementById('add_instagram').value,
+                whatsapp: document.getElementById('add_whatsapp').value,
+                notes: document.getElementById('add_notes').value
+            };
+
+            fetch('/leads', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('addLeadModal');
+                    // Reset form
+                    document.getElementById('addLeadForm').reset();
+                    // Reload page to display new lead card
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error creating lead', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error during lead creation', 'danger');
+            });
+        });
+
+        // Debounce search submissions and focus
+        const filterFormInput = document.querySelector('.search-input input');
+        let debounceTimer;
+        if (filterFormInput) {
+            filterFormInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    filterFormInput.form.submit();
+                }, 400); // 400ms debounce
+            });
+            // Keep cursor at end of text on focus/reload
+            const val = filterFormInput.value;
+            filterFormInput.value = '';
+            filterFormInput.value = val;
+            filterFormInput.focus();
+        }
+
+        // Open Add Lead Modal
+        document.getElementById('openAddLeadBtn').addEventListener('click', () => {
+            document.getElementById('addLeadModal').classList.add('active');
+        });
+
+        // Close modal helper
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Toggle dropdown card menu
+        function toggleCardMenu(leadId) {
+            const menu = document.getElementById(`menu-${leadId}`);
+            const allMenus = document.querySelectorAll('.dropdown-menu');
+            
+            allMenus.forEach(m => {
+                if (m.id !== `menu-${leadId}`) {
+                    m.classList.remove('active');
+                }
+            });
+
+            menu.classList.toggle('active');
+        }
+
+        // Close card menus on window click
+        window.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+        });
+
+        // Open edit modal and populate data
+        function openEditModal(leadDataStr) {
+            const lead = JSON.parse(leadDataStr);
+            
+            document.getElementById('edit_id').value = lead._id;
+            document.getElementById('edit_name').value = lead.name;
+            document.getElementById('edit_email').value = lead.email || '';
+            document.getElementById('edit_phone').value = lead.phone || '';
+            document.getElementById('edit_company').value = lead.company || '';
+            document.getElementById('edit_status').value = lead.status;
+            document.getElementById('edit_priority').value = lead.priority;
+            document.getElementById('edit_value').value = lead.estimatedValue;
+            document.getElementById('edit_source').value = lead.source;
+            document.getElementById('edit_notes').value = lead.notes ? lead.notes.replace(/<[^>]*>/g, '') : '';
+            
+            // Populate social media inputs
+            document.getElementById('edit_linkedin').value = (lead.socialMedia && lead.socialMedia.linkedin) || '';
+            document.getElementById('edit_twitter').value = (lead.socialMedia && lead.socialMedia.twitter) || '';
+            document.getElementById('edit_instagram').value = (lead.socialMedia && lead.socialMedia.instagram) || '';
+            document.getElementById('edit_whatsapp').value = (lead.socialMedia && lead.socialMedia.whatsapp) || '';
+
+            document.getElementById('editLeadModal').classList.add('active');
+        }
+    </script>
+</body>
+</html>

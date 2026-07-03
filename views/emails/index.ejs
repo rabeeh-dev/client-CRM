@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Client Workspace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/emails.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        <%- include('../partials/sidebar', { activePage: 'emails' }) %>
+        
+        <div class="view-frame">
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Emails', active: true }
+                ]
+            }) %>
+            
+            <main class="view-body">
+                <section class="leads-header">
+                    <div>
+                        <h1>Emails</h1>
+                        <p>Communicate with your clients efficiently</p>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="event.preventDefault(); openModal('composeEmailModal')">
+                        <i data-lucide="edit"></i> Compose Email
+                    </button>
+                </section>
+
+                <!-- Metrics Dashboard -->
+                <section class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="title">Total Sent</span>
+                        <div class="value"><%= stats.total %></div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Delivered</span>
+                        <div class="value" style="color: var(--success);"><%= stats.delivered %></div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Failed</span>
+                        <div class="value" style="color: var(--danger);"><%= stats.failed %></div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Sent This Month</span>
+                        <div class="value"><%= stats.sentThisMonth %></div>
+                    </div>
+                </section>
+
+                <!-- Filters & Search Bar -->
+                <section class="filter-panel">
+                    <form action="/emails" method="GET" class="filter-form">
+                        <div class="search-input">
+                            <i data-lucide="search"></i>
+                            <input type="text" name="search" placeholder="Search emails..." value="<%= filters.search || '' %>">
+                        </div>
+                        <div class="select-wrapper">
+                            <select name="clientId" onchange="this.form.submit()">
+                                <option value="">All Clients</option>
+                                <% clients.forEach(client => { %>
+                                    <option value="<%= client._id %>" <%= filters.clientId === client._id.toString() ? 'selected' : '' %>>
+                                        <%= client.name %>
+                                    </option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <% if (filters.search || filters.clientId) { %>
+                            <a href="/emails" class="btn btn-text" style="color: var(--danger);">Clear Filters</a>
+                        <% } %>
+                    </form>
+                </section>
+
+                <!-- Emails List -->
+                <div class="emails-list panel">
+                    <div class="email-list-header">
+                        <div class="email-list-title">
+                            <i data-lucide="send"></i>
+                            <h2>Sent Emails</h2>
+                            <span class="email-count-pill"><%= emails.length %></span>
+                        </div>
+                    </div>
+
+                    <% if (emails.length === 0) { %>
+                        <div class="email-empty-state">
+                            <div class="empty-icon-ring">
+                                <i data-lucide="inbox"></i>
+                            </div>
+                            <h3>No emails yet</h3>
+                            <p>Compose your first email to get started</p>
+                            <button type="button" class="btn btn-primary" onclick="openModal('composeEmailModal')">
+                                <i data-lucide="edit"></i> Compose Email
+                            </button>
+                        </div>
+                    <% } else { %>
+
+                        <!-- Column headers -->
+                        <div class="email-row email-row-head">
+                            <span></span>
+                            <span>Subject</span>
+                            <span>Recipient</span>
+                            <span>Type</span>
+                            <span>Sent</span>
+                            <span>Status</span>
+                            <span></span>
+                        </div>
+
+                        <!-- Email rows -->
+                        <% emails.forEach(email => { %>
+                        <%
+                            const typeColors = { contract: '#6366f1', invoice: '#10b981', proposal: '#f59e0b', update: '#3b82f6', welcome_guide: '#0ea5e9', final_note: '#ef4444', custom: '#8b5cf6' };
+                            const typeLabels = { contract: 'Contract', invoice: 'Invoice', proposal: 'Proposal', update: 'Update', welcome_guide: 'Welcome Guide', final_note: 'Final Note', custom: 'Custom' };
+                            const tColor = typeColors[email.emailType] || '#8b5cf6';
+                            const tLabel = typeLabels[email.emailType] || 'Custom';
+                            const clientName = email.clientId ? email.clientId.name : 'Unknown';
+                            const clientEmail = email.clientId ? email.clientId.email : '';
+                            const initials = clientName.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+                            const statusCls = email.deliveryStatus === 'delivered' ? 'status-delivered' : email.deliveryStatus === 'sent' ? 'status-sent' : email.deliveryStatus === 'pending' ? 'status-pending' : 'status-failed';
+                            const statusLabel = email.deliveryStatus.charAt(0).toUpperCase() + email.deliveryStatus.slice(1);
+                        %>
+                        <div class="email-row email-row-item">
+
+                            <!-- Avatar -->
+                            <div class="er-avatar" style="background: <%= tColor %>20; color: <%= tColor %>">
+                                <%= initials %>
+                            </div>
+
+                            <!-- Subject -->
+                            <div class="er-subject">
+                                <span class="er-subject-text"><%= email.subject %></span>
+                                <% if (email.attachments && email.attachments.length > 0) { %>
+                                    <span class="er-attach-badge">
+                                        <i data-lucide="paperclip"></i>
+                                        <%= email.attachments.length %>
+                                    </span>
+                                <% } %>
+                            </div>
+
+                            <!-- Recipient -->
+                            <div class="er-recipient">
+                                <span class="er-client-name"><%= clientName %></span>
+                                <span class="er-client-email"><%= clientEmail %></span>
+                            </div>
+
+                            <!-- Type pill -->
+                            <div class="er-type">
+                                <span class="er-type-pill" style="background: <%= tColor %>18; color: <%= tColor %>; border-color: <%= tColor %>30">
+                                    <%= tLabel %>
+                                </span>
+                            </div>
+
+                            <!-- Sent date -->
+                            <div class="er-date">
+                                <span class="er-date-main"><%= new Date(email.sentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                                <span class="er-date-time"><%= new Date(email.sentDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="er-status">
+                                <span class="er-status-badge <%= statusCls %>">
+                                    <span class="er-status-dot"></span>
+                                    <%= statusLabel %>
+                                </span>
+                            </div>
+
+                            <!-- Action -->
+                            <div class="er-action">
+                                <a href="/emails/<%= email._id %>" class="er-view-btn" title="View Email">
+                                    <i data-lucide="arrow-right"></i>
+                                </a>
+                            </div>
+
+                        </div>
+                        <% }); %>
+
+                    <% } %>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Compose Email Modal -->
+    <div id="composeEmailModal" class="modal-backdrop">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Compose Email</h2>
+                <button class="modal-close" onclick="closeModal('composeEmailModal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form action="/emails/send" method="POST" class="modal-form" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>To (Client) *</label>
+                        <select name="clientId" required>
+                            <option value="">Select a client</option>
+                            <% clients.forEach(client => { %>
+                                <option value="<%= client._id %>"><%= client.name %> (<%= client.email %>)</option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Type *</label>
+                        <select name="emailType" id="emailTypeSelect">
+                            <option value="custom">Custom Message</option>
+                            <option value="contract">Client Contract</option>
+                            <option value="invoice">Invoice</option>
+                            <option value="proposal">Project Proposal</option>
+                            <option value="update">Project Update</option>
+                            <option value="welcome_guide">Welcome Guide</option>
+                            <option value="final_note">Final Note</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Subject *</label>
+                    <input type="text" name="subject" id="subjectInput" placeholder="Enter email subject..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Message *</label>
+                    <textarea name="message" id="messageInput" rows="6" placeholder="Write your message here..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Attachments</label>
+                    <div class="file-upload-box" id="fileUploadBox">
+                        <i data-lucide="upload-cloud"></i>
+                        <p>Drag and drop files here, or <span class="text-primary">click to browse</span></p>
+                        <input type="file" name="attachments" multiple class="file-input" id="fileInput">
+                    </div>
+                    <div class="selected-files" id="selectedFiles"></div>
+                    <small style="color: var(--text-secondary); font-size: 11px;">Max 5 files, 10MB each. Allowed: jpg, png, pdf, doc, docx, zip</small>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('composeEmailModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="sendBtn">
+                        <i data-lucide="send"></i> Send Email
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+            lucide.createIcons();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // ── Email type config ───────────────────────────────────────────
+        const typeConfig = {
+            custom: {
+                subject: '',
+                message: ''
+            },
+            contract: {
+                subject: 'Client Contract — ',
+                message: `Dear Client,\n\nPlease find your contract details below. Kindly review the terms and conditions outlined in this agreement.\n\nIf you have any questions or require changes, feel free to reach out.\n\nBest regards`
+            },
+            invoice: {
+                subject: 'Invoice — ',
+                message: `Dear Client,\n\nPlease find attached the invoice for the services rendered. Below is a summary:\n\n• Invoice Number: \n• Amount Due: \n• Due Date: \n\nKindly process the payment at your earliest convenience. If you have any questions regarding this invoice, please don't hesitate to contact us.\n\nThank you for your business.`
+            },
+            proposal: {
+                subject: 'Project Proposal — ',
+                message: `Dear Client,\n\nThank you for the opportunity to submit this proposal. We've carefully reviewed your requirements and are excited to present our approach.\n\nProject Scope:\n• \n• \n\nTimeline: \nBudget: \n\nWe look forward to discussing this further and answering any questions you may have.\n\nBest regards`
+            },
+            update: {
+                subject: 'Project Update — ',
+                message: `Dear Client,\n\nHere is a quick update on the progress of your project:\n\n✅ Completed:\n• \n\n🔄 In Progress:\n• \n\n📅 Next Steps:\n• \n\nPlease let us know if you have any feedback or questions.\n\nBest regards`
+            },
+            welcome_guide: {
+                subject: 'Welcome Guide — ',
+                message: `Dear Client,\n\nWelcome aboard! We're thrilled to have you with us. Here's a quick guide to help you get started:\n\n1. Getting Started — We'll schedule a kickoff meeting to align on goals and timelines.\n2. Communication — You can reach us via email or our project dashboard at any time.\n3. Deliverables — We'll share progress updates regularly so you're always in the loop.\n4. Feedback — Your input is valuable. Don't hesitate to share your thoughts at any stage.\n\nWe're excited to work together and deliver outstanding results.\n\nWarm regards`
+            },
+            final_note: {
+                subject: 'Final Note — ',
+                message: `Dear Client,\n\nIt has been a pleasure working with you on this project. Here's a summary of what was accomplished:\n\n• \n• \n\nAll final deliverables have been shared. If you need any post-project support, feel free to reach out.\n\nThank you for your trust and partnership. We hope to collaborate again in the future!\n\nBest wishes`
+            }
+        };
+
+        const emailTypeSelect = document.getElementById('emailTypeSelect');
+        const subjectInput    = document.getElementById('subjectInput');
+        const messageInput    = document.getElementById('messageInput');
+
+        // Track whether user has manually edited the fields
+        const knownSubjects = Object.values(typeConfig).map(c => c.subject).filter(Boolean);
+        const knownMessages = Object.values(typeConfig).map(c => c.message).filter(Boolean);
+
+        emailTypeSelect.addEventListener('change', function () {
+            const cfg = typeConfig[this.value] || typeConfig.custom;
+
+            // Auto-fill subject if empty or still a template
+            if (!subjectInput.value || knownSubjects.some(p => subjectInput.value.startsWith(p))) {
+                subjectInput.value = cfg.subject;
+            }
+
+            // Auto-fill message if empty or still a template
+            if (!messageInput.value || knownMessages.some(m => messageInput.value === m)) {
+                messageInput.value = cfg.message;
+            }
+
+            subjectInput.focus();
+            subjectInput.setSelectionRange(subjectInput.value.length, subjectInput.value.length);
+        });
+
+        // ── File Upload Handling ─────────────────────────────────────────
+        const fileInput              = document.getElementById('fileInput');
+        const fileUploadBox          = document.getElementById('fileUploadBox');
+        const selectedFilesContainer = document.getElementById('selectedFiles');
+        let fileList = new DataTransfer();
+
+        fileInput.addEventListener('change', function () {
+            for (let i = 0; i < this.files.length; i++) {
+                if (fileList.files.length < 5) fileList.items.add(this.files[i]);
+            }
+            fileInput.files = fileList.files;
+            renderFileList();
+        });
+
+        fileUploadBox.addEventListener('dragover',  e => { e.preventDefault(); fileUploadBox.classList.add('drag-over'); });
+        fileUploadBox.addEventListener('dragleave', e => { e.preventDefault(); fileUploadBox.classList.remove('drag-over'); });
+        fileUploadBox.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            for (let i = 0; i < e.dataTransfer.files.length; i++) {
+                if (fileList.files.length < 5) fileList.items.add(e.dataTransfer.files[i]);
+            }
+            fileInput.files = fileList.files;
+            renderFileList();
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024)    return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function removeFile(index) {
+            const next = new DataTransfer();
+            for (let i = 0; i < fileList.files.length; i++) {
+                if (i !== index) next.items.add(fileList.files[i]);
+            }
+            fileList = next;
+            fileInput.files = fileList.files;
+            renderFileList();
+        }
+
+        function renderFileList() {
+            selectedFilesContainer.innerHTML = '';
+            for (let i = 0; i < fileList.files.length; i++) {
+                const file = fileList.files[i];
+                const div  = document.createElement('div');
+                div.className = 'selected-file-item';
+                div.innerHTML = `
+                    <span class="file-name">
+                        <i data-lucide="file"></i>
+                        ${file.name}
+                    </span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                    <button type="button" class="remove-file" onclick="removeFile(${i})" title="Remove">
+                        <i data-lucide="x"></i>
+                    </button>
+                `;
+                selectedFilesContainer.appendChild(div);
+            }
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

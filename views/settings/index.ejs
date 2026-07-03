@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages/leads.css">
+    <link rel="stylesheet" href="/css/pages/settings.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <div class="app-layout">
+        <%- include('../partials/sidebar', { activePage: 'settings' }) %>
+        
+        <div class="view-frame">
+            <%- include('../partials/header', {
+                breadcrumbs: [
+                    { label: 'Workspace' },
+                    { label: 'Settings', active: true }
+                ]
+            }) %>
+            
+            <main class="view-body">
+                <section class="leads-header">
+                    <div>
+                        <h1>Workspace Settings</h1>
+                        <p>Manage your profile, company details, and preferences</p>
+                    </div>
+                </section>
+
+                <div class="settings-layout">
+                    <!-- Sidebar Navigation for Settings -->
+                    <nav class="settings-nav">
+                        <div class="settings-nav-item active" onclick="switchSettingsTab('profile', this)">
+                            <i data-lucide="user"></i> Profile
+                        </div>
+                        <div class="settings-nav-item" onclick="switchSettingsTab('company', this)">
+                            <i data-lucide="building-2"></i> Company
+                        </div>
+                        <div class="settings-nav-item" onclick="switchSettingsTab('smtp', this)">
+                            <i data-lucide="mail"></i> SMTP Settings
+                        </div>
+                        <div class="settings-nav-item" onclick="switchSettingsTab('preferences', this)">
+                            <i data-lucide="sliders"></i> Preferences
+                        </div>
+                    </nav>
+
+                    <!-- Settings Forms -->
+                    <div class="settings-content">
+                        <form id="settingsForm" enctype="multipart/form-data">
+                            
+                            <!-- PROFILE SECTION -->
+                            <div class="settings-section active" id="profile-section">
+                                <div class="section-header">
+                                    <h2>Profile Information</h2>
+                                    <p>Update your personal details and password.</p>
+                                </div>
+                                
+                                <div class="settings-form-group">
+                                    <label>Profile Photo</label>
+                                    <div class="avatar-upload-box">
+                                        <div class="avatar-preview">
+                                            <% if (userRecord.profileImage) { %>
+                                                <img src="<%= userRecord.profileImage %>" alt="Avatar" id="profilePreview">
+                                            <% } else { %>
+                                                <i data-lucide="user" id="profilePreviewIcon"></i>
+                                                <img src="" alt="Avatar" id="profilePreview" style="display: none;">
+                                            <% } %>
+                                        </div>
+                                        <div class="avatar-upload-actions">
+                                            <input type="file" name="profilePhoto" id="profilePhoto" accept="image/*" style="display: none;" onchange="previewImage(this, 'profilePreview')">
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('profilePhoto').click()">
+                                                <i data-lucide="upload"></i> Upload New
+                                            </button>
+                                            <small>Recommended 256x256px JPG or PNG</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-row">
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="firstName">First Name</label>
+                                        <input type="text" name="firstName" id="firstName" value="<%= userRecord.firstName %>" required>
+                                    </div>
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="lastName">Last Name</label>
+                                        <input type="text" name="lastName" id="lastName" value="<%= userRecord.lastName %>" required>
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" name="email" id="email" value="<%= userRecord.email %>" required>
+                                </div>
+
+                                <div class="section-header" style="margin-top: 2.5rem;">
+                                    <h2>Change Password</h2>
+                                    <p>Leave blank if you don't want to change your password.</p>
+                                </div>
+
+                                <div class="settings-form-row">
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="currentPassword">Current Password</label>
+                                        <input type="password" name="currentPassword" id="currentPassword" placeholder="••••••••">
+                                    </div>
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="newPassword">New Password</label>
+                                        <input type="password" name="newPassword" id="newPassword" placeholder="••••••••">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- COMPANY SECTION -->
+                            <div class="settings-section" id="company-section">
+                                <div class="section-header">
+                                    <h2>Company Details</h2>
+                                    <p>Information used on invoices and proposals.</p>
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label>Company Logo</label>
+                                    <div class="avatar-upload-box">
+                                        <div class="logo-preview">
+                                            <% if (userRecord.company && userRecord.company.logo) { %>
+                                                <img src="<%= userRecord.company.logo %>" alt="Company Logo" id="logoPreview">
+                                            <% } else { %>
+                                                <i data-lucide="image" id="logoPreviewIcon" style="width: 32px; height: 32px; color: var(--text-muted);"></i>
+                                                <img src="" alt="Company Logo" id="logoPreview" style="display: none;">
+                                            <% } %>
+                                        </div>
+                                        <div class="avatar-upload-actions">
+                                            <input type="file" name="companyLogo" id="companyLogo" accept="image/*" style="display: none;" onchange="previewImage(this, 'logoPreview')">
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('companyLogo').click()">
+                                                <i data-lucide="upload"></i> Upload Logo
+                                            </button>
+                                            <small>Transparent PNG recommended</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-row">
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="companyName">Company Name</label>
+                                        <input type="text" name="companyName" id="companyName" value="<%= userRecord.company ? userRecord.company.name : '' %>" placeholder="Your Business Name">
+                                    </div>
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="companyEmail">Company Email</label>
+                                        <input type="email" name="companyEmail" id="companyEmail" value="<%= userRecord.company ? userRecord.company.email : '' %>" placeholder="hello@yourbusiness.com">
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label for="companyPhone">Phone Number</label>
+                                    <input type="text" name="companyPhone" id="companyPhone" value="<%= userRecord.company ? userRecord.company.phone : '' %>" placeholder="+1 (555) 000-0000">
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label for="companyAddress">Business Address</label>
+                                    <textarea name="companyAddress" id="companyAddress" rows="3" placeholder="123 Business Rd, City, Country"><%= userRecord.company ? userRecord.company.address : '' %></textarea>
+                                </div>
+                            </div>
+
+                            <!-- SMTP SETTINGS SECTION -->
+                            <div class="settings-section" id="smtp-section">
+                                <div class="section-header">
+                                    <h2>SMTP Settings</h2>
+                                    <p>Configure outgoing email settings for sending proposals and invoices.</p>
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label for="smtpSenderEmail">Sender Email Address</label>
+                                    <input type="email" name="smtpSenderEmail" id="smtpSenderEmail" value="<%= userRecord.smtp ? userRecord.smtp.senderEmail : '' %>" placeholder="sender@yourbusiness.com">
+                                    <small>This email address will appear as the "From" address when sending emails to clients.</small>
+                                </div>
+                                
+                                <div class="empty-state-small" style="margin-top: 1rem; text-align: left; padding: 1.5rem; display: flex; gap: 1rem; align-items: flex-start; background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2);">
+                                    <i data-lucide="info" style="color: var(--primary); flex-shrink: 0;"></i>
+                                    <div>
+                                        <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: var(--primary);">System Configuration Note</p>
+                                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Currently, full SMTP configurations (Host, Port, Passwords) are managed via environment variables for security. You can update your designated Sender Email here which will be used in the 'From' header.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PREFERENCES SECTION -->
+                            <div class="settings-section" id="preferences-section">
+                                <div class="section-header">
+                                    <h2>Workspace Preferences</h2>
+                                    <p>Customize localization and display settings.</p>
+                                </div>
+
+                                <div class="settings-form-row">
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="currency">Default Currency</label>
+                                        <select name="currency" id="currency">
+                                            <option value="INR" <%= (userRecord.preferences && userRecord.preferences.currency === 'INR') ? 'selected' : '' %>>₹ Indian Rupee (INR)</option>
+                                            <option value="USD" <%= (userRecord.preferences && userRecord.preferences.currency === 'USD') ? 'selected' : '' %>>$ US Dollar (USD)</option>
+                                            <option value="EUR" <%= (userRecord.preferences && userRecord.preferences.currency === 'EUR') ? 'selected' : '' %>>€ Euro (EUR)</option>
+                                            <option value="GBP" <%= (userRecord.preferences && userRecord.preferences.currency === 'GBP') ? 'selected' : '' %>>£ British Pound (GBP)</option>
+                                        </select>
+                                    </div>
+                                    <div class="settings-form-group" style="margin-bottom: 0;">
+                                        <label for="timezone">Timezone</label>
+                                        <select name="timezone" id="timezone">
+                                            <option value="Asia/Kolkata" <%= (userRecord.preferences && userRecord.preferences.timezone === 'Asia/Kolkata') ? 'selected' : '' %>>Asia/Kolkata (IST)</option>
+                                            <option value="America/New_York" <%= (userRecord.preferences && userRecord.preferences.timezone === 'America/New_York') ? 'selected' : '' %>>America/New_York (EST)</option>
+                                            <option value="Europe/London" <%= (userRecord.preferences && userRecord.preferences.timezone === 'Europe/London') ? 'selected' : '' %>>Europe/London (GMT)</option>
+                                            <option value="UTC" <%= (userRecord.preferences && userRecord.preferences.timezone === 'UTC') ? 'selected' : '' %>>UTC</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="settings-form-group">
+                                    <label for="dateFormat">Date Format</label>
+                                    <select name="dateFormat" id="dateFormat">
+                                        <option value="DD/MM/YYYY" <%= (userRecord.preferences && userRecord.preferences.dateFormat === 'DD/MM/YYYY') ? 'selected' : '' %>>DD/MM/YYYY (e.g. 31/12/2026)</option>
+                                        <option value="MM/DD/YYYY" <%= (userRecord.preferences && userRecord.preferences.dateFormat === 'MM/DD/YYYY') ? 'selected' : '' %>>MM/DD/YYYY (e.g. 12/31/2026)</option>
+                                        <option value="YYYY-MM-DD" <%= (userRecord.preferences && userRecord.preferences.dateFormat === 'YYYY-MM-DD') ? 'selected' : '' %>>YYYY-MM-DD (e.g. 2026-12-31)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Global Actions -->
+                            <div class="settings-actions">
+                                <button type="submit" class="btn btn-primary" id="saveBtn">
+                                    <i data-lucide="save"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Custom Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        lucide.createIcons();
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconName = 'check-circle';
+            if (type === 'danger') iconName = 'alert-circle';
+            
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i data-lucide="${iconName}"></i>
+                </div>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Tab Switching Logic
+        function switchSettingsTab(tabName, element) {
+            // Update nav items
+            document.querySelectorAll('.settings-nav-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('.settings-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(tabName + '-section').classList.add('active');
+        }
+
+        // Image Preview Logic
+        function previewImage(input, targetId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById(targetId);
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    
+                    const icon = document.getElementById(targetId + 'Icon');
+                    if (icon) icon.style.display = 'none';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Form Submit
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Saving...';
+            btn.disabled = true;
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('/settings', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Clear password fields after save
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                } else {
+                    showToast(data.message || 'Failed to update settings', 'danger');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('A network error occurred', 'danger');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>

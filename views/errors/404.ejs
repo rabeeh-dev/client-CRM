@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages/errors.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="error-page-body">
+    <div class="error-container">
+        <div class="error-icon icon-404">
+            <i data-lucide="map-pin-off"></i>
+        </div>
+        <div class="error-code">404</div>
+        <h1 class="error-title">Page Not Found</h1>
+        <p class="error-message">Oops! The page you're looking for seems to have vanished or never existed in the first place.</p>
+        
+        <div class="error-actions">
+            <a href="/dashboard" class="btn-error-primary">
+                <i data-lucide="home"></i> Back to Dashboard
+            </a>
+            <a href="javascript:history.back()" class="btn-error-secondary">
+                <i data-lucide="arrow-left"></i> Go Back
+            </a>
+        </div>
+    </div>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

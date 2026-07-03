@@ -1,0 +1,128 @@
+/* Premium CRM Invoicing & Payments Stylesheet */
+
+/* Table layout adjustments */
+.payments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.005);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.payments-table th, 
+.payments-table td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.payments-table th {
+    background-color: rgba(255, 255, 255, 0.018);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.payments-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+.payments-table td strong {
+    color: white;
+}
+
+.payments-table td.amount-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    color: white;
+}
+
+/* Specific details list items */
+.transactions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.transaction-item {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.transaction-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.transaction-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.transaction-left .date {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+}
+
+.transaction-left .method {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--primary);
+    background: rgba(79, 70, 229, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-self: flex-start;
+}
+
+.transaction-left .notes {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 4px;
+}
+
+.transaction-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.transaction-right .amount {
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+}
+
+/* Ledger Overview Sidebar fields */
+.detail-invoice-card {
+    border-top: 1px solid var(--border-color);
+    margin-top: 16px;
+    padding-top: 16px;
+}
+
+/* Embedded inline transaction log form styling */
+.log-payment-panel {
+    background: rgba(255, 255, 255, 0.005);
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
