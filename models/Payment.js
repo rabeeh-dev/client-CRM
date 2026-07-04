@@ -65,4 +65,15 @@ const paymentSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+paymentSchema.pre('save', function(next) {
+    if (this.isModified('status')) {
+        if (this.status === 'paid' && !this.paidDate) {
+            this.paidDate = new Date();
+        } else if (this.status !== 'paid') {
+            this.paidDate = undefined;
+        }
+    }
+    next();
+});
+
 module.exports = mongoose.model('Payment', paymentSchema);

@@ -22,7 +22,8 @@ const getLeads = async (req, res, next) => {
             query.source = source;
         }
         if (search) {
-            const regex = new RegExp(search, 'i');
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'i');
             query.$or = [
                 { name: regex },
                 { company: regex },
@@ -152,7 +153,7 @@ const createLead = async (req, res, next) => {
         const leadData = {
             userId,
             name,
-            email: email || '',
+            email: email || undefined,
             phone: phone || '',
             company: company || '',
             source: source || 'other',
@@ -282,7 +283,7 @@ const updateLead = async (req, res, next) => {
 
         // Update properties
         lead.name = name;
-        lead.email = email || '';
+        lead.email = email || undefined;
         lead.phone = phone || '';
         lead.company = company || '';
         lead.source = source || 'other';
@@ -297,9 +298,7 @@ const updateLead = async (req, res, next) => {
             whatsapp: whatsapp || ''
         };
 
-        await lead.save();
-
-        if (wasNotWon && status === 'won') {
+        if (wasNotWon && status === 'won' && !lead.convertedClientId) {
             const Client = require('../models/Client');
             const newClient = new Client({
                 userId,
@@ -321,7 +320,12 @@ const updateLead = async (req, res, next) => {
                 description: `Client automatically created from won lead in pipeline.`
             });
             await activity.save();
+
+            lead.convertedClientId = newClient._id;
+            lead.convertedAt = new Date();
         }
+
+        await lead.save();
 
         return res.json({ success: true, message: 'Lead details updated successfully', lead });
     } catch (err) {
@@ -357,6 +361,65 @@ const toggleFollowUp = async (req, res, next) => {
     }
 };
 
+/**
+ * Convert a lead into an active Client.
+ */
+const convertLead = async (req, res, next) => {
+    try {
+        const userId = req.session.userId;
+        const { id } = req.params;
+        const { name, email, phone, company, notes } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ success: false, message: 'Client name is required' });
+        }
+
+        const lead = await Lead.findOne({ _id: id, userId, isDeleted: false });
+        if (!lead) {
+            return res.status(404).json({ success: false, message: 'Lead not found' });
+        }
+
+        if (lead.convertedClientId) {
+            return res.status(400).json({ success: false, message: 'This lead has already been converted to a client' });
+        }
+
+        const Client = require('../models/Client');
+        const newClient = new Client({
+            userId,
+            name,
+            email: email || undefined,
+            phone: phone || '',
+            company: company || '',
+            status: 'active',
+            notes: notes || lead.notes || '',
+            socialMedia: lead.socialMedia
+        });
+        await newClient.save();
+
+        const Activity = require('../models/Activity');
+        const activity = new Activity({
+            userId,
+            clientId: newClient._id,
+            type: 'general',
+            description: `Client automatically created by converting lead '${lead.name}'.`
+        });
+        await activity.save();
+
+        lead.status = 'won';
+        lead.convertedClientId = newClient._id;
+        lead.convertedAt = new Date();
+        await lead.save();
+
+        return res.json({
+            success: true,
+            message: 'Lead converted to client successfully',
+            clientId: newClient._id
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     getLeads,
     getLeadDetail,
@@ -365,5 +428,6 @@ module.exports = {
     logInteraction,
     addFollowUp,
     toggleFollowUp,
-    updateLead
+    updateLead,
+    convertLead
 };

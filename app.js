@@ -10,7 +10,6 @@ const projectRoutes = require('./routes/project.routes');
 const taskRoutes = require('./routes/task.routes');
 const calendarRoutes = require('./routes/calendar.routes');
 const paymentRoutes = require('./routes/payment.routes');
-const emailRoutes = require('./routes/email.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const errorHandler = require('./middleware/errorHandler');
@@ -148,7 +147,6 @@ app.use('/', projectRoutes);
 app.use('/', taskRoutes);
 app.use('/', calendarRoutes);
 app.use('/', paymentRoutes);
-app.use('/emails', emailRoutes);
 app.use('/', analyticsRoutes);
 app.use('/', settingsRoutes);
 

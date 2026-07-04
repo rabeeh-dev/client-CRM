@@ -12,6 +12,8 @@ router.delete('/projects/:id', isAuthenticated, projectController.deleteProject)
 
 // Checklist toggle API
 router.put('/projects/:id/checklist/toggle', isAuthenticated, projectController.toggleChecklist);
+router.post('/projects/:id/checklist', isAuthenticated, projectController.addMilestone);
+router.delete('/projects/:id/checklist', isAuthenticated, projectController.deleteMilestone);
 
 // Tasks Tab Actions
 router.post('/projects/:id/tasks', isAuthenticated, projectController.addTask);

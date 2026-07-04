@@ -25,26 +25,33 @@ const getDashboard = async (req, res, next) => {
 
         const d = new Date();
         const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
 
-        // Try to match on either paidDate or updatedAt for paid invoices
         const revenueThisMonthAgg = await Payment.aggregate([
-            { $match: { 
-                userId: objectIdUser, 
-                status: 'paid', 
-                isDeleted: false,
-                $or: [
-                    { paidDate: { $gte: startOfMonth, $lte: endOfMonth } },
-                    { updatedAt: { $gte: startOfMonth, $lte: endOfMonth } }
-                ]
-            } },
+            { $match: { userId: objectIdUser, status: 'paid', isDeleted: false } },
+            {
+                $project: {
+                    amount: 1,
+                    revenueDate: { $ifNull: ["$paidDate", "$createdAt"] }
+                }
+            },
+            { $match: { revenueDate: { $gte: startOfMonth, $lte: endOfMonth } } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
         const revenueThisMonthAmount = revenueThisMonthAgg.length > 0 ? revenueThisMonthAgg[0].total : 0;
         const revenueThisMonthStr = revenueThisMonthAmount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
-        // Tasks
-        const dbTasks = await Task.find({ userId, isDeleted: false, status: { $ne: 'completed' } })
+        // Tasks due today
+        const dbTasks = await Task.find({ 
+            userId, 
+            isDeleted: false, 
+            status: { $ne: 'completed' },
+            dueDate: { $gte: startOfToday, $lte: endOfToday }
+        })
             .populate('projectId', 'name')
             .sort({ dueDate: 1 })
             .limit(5);
@@ -89,26 +96,33 @@ const getDashboard = async (req, res, next) => {
         });
 
         // Deadlines (Projects nearing completion)
-        const dbDeadlines = await Project.find({ userId, isDeleted: false, endDate: { $gte: new Date() }, status: { $in: ['planning', 'in_progress'] } })
+        const dbDeadlines = await Project.find({ userId, isDeleted: false, endDate: { $gte: startOfToday }, status: { $in: ['planning', 'in_progress'] } })
+            .populate('clientId', 'name')
             .sort({ endDate: 1 })
             .limit(4);
 
         const deadlines = dbDeadlines.map(p => ({
             id: p._id,
             name: p.name,
-            project: p.name,
+            project: p.clientId ? p.clientId.name : 'General Client',
             date: new Date(p.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            type: 'archive' 
+            type: p.status === 'planning' ? 'design' : 'archive' 
         }));
 
         // Revenue Chart (last 6 months)
         const monthlyRevenueAgg = await Payment.aggregate([
             { $match: { userId: objectIdUser, status: 'paid', isDeleted: false } },
             {
+                $project: {
+                    amount: 1,
+                    revenueDate: { $ifNull: ["$paidDate", "$createdAt"] }
+                }
+            },
+            {
                 $group: {
                     _id: {
-                        year: { $year: { $ifNull: ["$paidDate", "$updatedAt"] } },
-                        month: { $month: { $ifNull: ["$paidDate", "$updatedAt"] } }
+                        year: { $year: "$revenueDate" },
+                        month: { $month: "$revenueDate" }
                     },
                     total: { $sum: "$amount" }
                 }
@@ -132,6 +146,57 @@ const getDashboard = async (req, res, next) => {
             dChart.setMonth(dChart.getMonth() + 1);
         }
 
+        const newClientsThisMonth = await Client.countDocuments({ 
+            userId, 
+            isDeleted: false,
+            createdAt: { $gte: startOfMonth, $lte: endOfMonth }
+        });
+
+        const twoWeeksFromNow = new Date();
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+
+        const projectsNearingCompletion = await Project.countDocuments({
+            userId,
+            isDeleted: false,
+            status: { $in: ['planning', 'in_progress'] },
+            endDate: { $gte: new Date(), $lte: twoWeeksFromNow }
+        });
+
+        const overduePaymentsCount = await Payment.countDocuments({
+            userId,
+            isDeleted: false,
+            $or: [
+                { status: 'overdue' },
+                { status: 'pending', dueDate: { $lt: new Date() } }
+            ]
+        });
+
+        const startOfLastMonth = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(d.getFullYear(), d.getMonth(), 0);
+
+        const revenueLastMonthAgg = await Payment.aggregate([
+            { $match: { userId: objectIdUser, status: 'paid', isDeleted: false } },
+            {
+                $project: {
+                    amount: 1,
+                    revenueDate: { $ifNull: ["$paidDate", "$createdAt"] }
+                }
+            },
+            { $match: { revenueDate: { $gte: startOfLastMonth, $lte: endOfLastMonth } } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const revenueLastMonthAmount = revenueLastMonthAgg.length > 0 ? revenueLastMonthAgg[0].total : 0;
+
+        let revenueGrowth = 0;
+        if (revenueLastMonthAmount === 0 && revenueThisMonthAmount > 0) {
+            revenueGrowth = 100;
+        } else if (revenueLastMonthAmount > 0) {
+            revenueGrowth = Math.round(((revenueThisMonthAmount - revenueLastMonthAmount) / revenueLastMonthAmount) * 100);
+        }
+
+        const fullMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const lastMonthName = fullMonths[startOfLastMonth.getMonth()];
+
         const dashboardData = {
             activeClients,
             activeProjects,
@@ -141,7 +206,14 @@ const getDashboard = async (req, res, next) => {
             activities,
             deadlines,
             chartLabels,
-            chartData
+            chartData,
+            stats: {
+                newClientsThisMonth,
+                projectsNearingCompletion,
+                overduePaymentsCount,
+                revenueGrowth,
+                lastMonthName
+            }
         };
 
         res.render('dashboard/index', {

@@ -12,5 +12,6 @@ router.put('/leads/:id', isAuthenticated, leadController.updateLead);
 router.post('/leads/:id/interactions', isAuthenticated, leadController.logInteraction);
 router.post('/leads/:id/followups', isAuthenticated, leadController.addFollowUp);
 router.put('/leads/:id/followups/:followupId/toggle', isAuthenticated, leadController.toggleFollowUp);
+router.post('/leads/:id/convert', isAuthenticated, leadController.convertLead);
 
 module.exports = router;

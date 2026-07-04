@@ -114,7 +114,7 @@ exports.updateTask = async (req, res, next) => {
         if (projectId && projectId !== task.projectId._id.toString()) {
             const newProject = await Project.findOne({ _id: projectId, userId, isDeleted: false });
             if (!newProject) {
-                return res.status(444).json({ success: false, message: 'New assigned project not found' });
+                return res.status(404).json({ success: false, message: 'New assigned project not found' });
             }
             task.projectId = newProject._id;
         }
@@ -122,7 +122,9 @@ exports.updateTask = async (req, res, next) => {
         task.title = title || task.title;
         task.description = description !== undefined ? description : task.description;
         task.priority = priority || task.priority;
-        task.dueDate = deadline ? new Date(deadline) : task.dueDate;
+        if (deadline !== undefined) {
+            task.dueDate = deadline ? new Date(deadline) : undefined;
+        }
         
         // Update status if present and valid
         if (status && ['todo', 'in_progress', 'completed'].includes(status)) {

@@ -1,4 +1,4 @@
-<div class="task-board-card" draggable="true" ondragstart="drag(event)" data-task-id="<%= task._id %>">
+<div class="task-board-card" draggable="true" ondragstart="drag(event)" data-task-id="<%= task._id %>" data-task="<%= JSON.stringify(task) %>">
     <div class="card-top-row">
         <span class="priority-badge priority-<%= task.priority %>"><%= task.priority %></span>
         
@@ -7,13 +7,13 @@
             <% if (currentColumn === 'in_progress' || currentColumn === 'completed') { %>
                 <% const prevStatus = currentColumn === 'completed' ? 'in_progress' : 'todo'; %>
                 <button class="quick-move-btn" onclick="transitionTask('<%= task._id %>', '<%= prevStatus %>')" title="Move Back">
-                    <i data-lucide="chevron-left" style="width: 12px; height: 12px;"></i>
+                     <i data-lucide="chevron-left" style="width: 12px; height: 12px;"></i>
                 </button>
             <% } %>
             <% if (currentColumn === 'todo' || currentColumn === 'in_progress') { %>
                 <% const nextStatus = currentColumn === 'todo' ? 'in_progress' : 'completed'; %>
                 <button class="quick-move-btn" onclick="transitionTask('<%= task._id %>', '<%= nextStatus %>')" title="Move Forward">
-                    <i data-lucide="chevron-right" style="width: 12px; height: 12px;"></i>
+                     <i data-lucide="chevron-right" style="width: 12px; height: 12px;"></i>
                 </button>
             <% } %>
             
@@ -22,8 +22,8 @@
                 <i data-lucide="more-horizontal" style="width: 12px; height: 12px;"></i>
             </button>
             <div class="dropdown-menu" id="menu-<%= task._id %>" style="top: 26px; right: 0;">
-                <a href="#" onclick="event.preventDefault(); openEditModal('<%= JSON.stringify(task) %>')">Edit Task</a>
-                <a href="#" class="delete-link" onclick="event.preventDefault(); deleteTaskPrompt('<%= task._id %>', '<%= task.title %>')">Delete Task</a>
+                <a href="#" onclick="event.preventDefault(); openEditModal(JSON.parse(this.closest('.task-board-card').dataset.task))">Edit Task</a>
+                <a href="#" class="delete-link" onclick="event.preventDefault(); deleteTaskPrompt('<%= task._id %>', this.closest('.task-board-card').querySelector('h3').innerText)">Delete Task</a>
             </div>
         </div>
     </div>

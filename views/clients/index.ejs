@@ -103,7 +103,7 @@
                         </div>
                     <% } else { %>
                         <% clients.forEach(client => { %>
-                            <div class="lead-card status-<%= client.status %>" onclick="window.location.href='/clients/<%= client._id %>'" style="cursor: pointer;">
+                            <div class="lead-card status-<%= client.status %>" onclick="window.location.href='/clients/<%= client._id %>'" style="cursor: pointer;" data-client="<%= JSON.stringify(client) %>">
                                 <div class="card-header">
                                     <div class="lead-meta">
                                         <span class="status-badge status-<%= client.status %>"><%= client.status %></span>
@@ -118,8 +118,8 @@
                                     </button>
                                     <div class="dropdown-menu" id="menu-<%= client._id %>">
                                         <a href="/clients/<%= client._id %>">View Details</a>
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal('<%= JSON.stringify(client) %>')">Edit Client</a>
-                                        <a href="#" class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); deleteClientPrompt('<%= client._id %>', '<%= client.name %>')">Delete Client</a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal(this.closest('.lead-card').dataset.client)">Edit Client</a>
+                                        <a href="#" class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); deleteClientPrompt('<%= client._id %>', this.closest('.lead-card').querySelector('h3.name').innerText)">Delete Client</a>
                                     </div>
                                 </div>
 
@@ -133,7 +133,8 @@
                                             <span class="company"><%= client.company || 'Individual Freelancer' %></span>
                                         </div>
                                     </div>
-                                    <p class="notes-preview"><%= client.notes ? client.notes.replace(/<[^>]*>/g, '').substring(0, 80) + '...' : 'No notes recorded.' %></p>
+                                    <% const cleanNotes = client.notes ? client.notes.replace(/<[^>]*>/g, '') : ''; %>
+                                    <p class="notes-preview"><%= cleanNotes ? (cleanNotes.length > 80 ? cleanNotes.substring(0, 80) + '...' : cleanNotes) : 'No notes recorded.' %></p>
                                 </div>
 
                                 <div class="card-footer">
@@ -476,8 +477,8 @@
         });
 
         // Edit Client Modal Trigger
-        function openEditModal(clientStr) {
-            const client = JSON.parse(clientStr);
+        function openEditModal(clientData) {
+            const client = typeof clientData === 'string' ? JSON.parse(clientData) : clientData;
             document.getElementById('edit_id').value = client._id;
             document.getElementById('edit_name').value = client.name;
             document.getElementById('edit_company').value = client.company || '';

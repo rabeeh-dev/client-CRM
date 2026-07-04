@@ -227,7 +227,7 @@
                     <i data-lucide="x"></i>
                 </button>
             </div>
-            <form action="#" class="modal-form" onsubmit="event.preventDefault(); showToast('Opportunity converted successfully! Redirecting...', 'success'); setTimeout(() => window.location.href='/leads', 1500);">
+            <form id="convertLeadForm" class="modal-form">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="c_name">Client Contact Person *</label>
@@ -669,6 +669,39 @@
         // Convert modal trigger
         document.getElementById('convertBtn').addEventListener('click', () => {
             document.getElementById('convertModal').classList.add('active');
+        });
+
+        // Convert Lead Submit
+        document.getElementById('convertLeadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('c_name').value,
+                email: document.getElementById('c_email').value,
+                phone: document.getElementById('c_phone').value,
+                company: document.getElementById('c_company').value
+            };
+
+            fetch('/leads/<%= lead._id %>/convert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Opportunity converted successfully! Redirecting...', 'success');
+                    closeModal('convertModal');
+                    setTimeout(() => window.location.href = `/clients/${data.clientId}`, 1500);
+                } else {
+                    showToast(data.message || 'Error converting lead to client', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
         });
 
         // Close modal

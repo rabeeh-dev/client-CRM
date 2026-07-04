@@ -93,9 +93,17 @@ exports.getProjectDetail = async (req, res, next) => {
 
         // Fetch child resources
         const tasks = await Task.find({ projectId: project._id, isDeleted: false }).sort({ createdAt: -1 });
-        const payments = await Payment.find({ projectId: project._id, isDeleted: false }).sort({ dueDate: -1 });
+        const payments = await Payment.find({ projectId: project._id, isDeleted: false }).sort({ paidDate: -1, createdAt: -1 });
         const documents = await Document.find({ projectId: project._id, isDeleted: false }).sort({ uploadedAt: -1 });
         const activities = await Activity.find({ projectId: project._id }).sort({ date: -1 });
+
+        // Calculate billing progress metrics
+        let totalPaid = 0;
+        payments.filter(p => p.status === 'paid').forEach(p => {
+            totalPaid += p.amount;
+        });
+        const projectBudget = project.budget || project.value || 0;
+        const remainingBalance = Math.max(0, projectBudget - totalPaid);
 
         res.render('projects/detail', {
             title: `${project.name} | Project Workspace`,
@@ -105,6 +113,8 @@ exports.getProjectDetail = async (req, res, next) => {
             payments,
             documents,
             activities,
+            totalPaid,
+            remainingBalance,
             activePage: 'projects'
         });
     } catch (err) {
@@ -116,31 +126,32 @@ exports.getProjectDetail = async (req, res, next) => {
 exports.createProject = async (req, res, next) => {
     try {
         const userId = req.session.userId;
-        const { name, clientId, budget, deadline, status, priority, description } = req.body;
+        const { name, clientId, budget, value, deadline, status, priority, description } = req.body;
 
         if (!name || !clientId) {
             return res.status(400).json({ success: false, message: 'Project name and client are required' });
         }
 
+        const projectBudget = Number(budget !== undefined ? budget : (value !== undefined ? value : 0)) || 0;
+
         const project = new Project({
             userId,
             clientId,
             name,
-            budget: Number(budget) || 0,
-            value: Number(budget) || 0,
+            budget: projectBudget,
+            value: projectBudget,
             startDate: new Date(),
             endDate: deadline ? new Date(deadline) : undefined,
             status: status || 'planning',
             priority: priority || 'medium',
-            description: description || '',
-            checklist: {
-                homepage: false,
-                shop: false,
-                adminPanel: false,
-                testing: false,
-                deployment: false,
-                delivery: false
-            }
+            checklist: [
+                { label: 'Homepage Design', completed: false },
+                { label: 'Online Shop / E-Commerce', completed: false },
+                { label: 'Admin Control Panel', completed: false },
+                { label: 'QA Testing & Bug Fixes', completed: false },
+                { label: 'Server Deployment', completed: false },
+                { label: 'Project Delivery & Handoff', completed: false }
+            ]
         });
 
         await project.save();
@@ -168,26 +179,72 @@ exports.createProject = async (req, res, next) => {
 exports.updateProject = async (req, res, next) => {
     try {
         const userId = req.session.userId;
-        const { name, clientId, budget, deadline, status, priority, description } = req.body;
+        const { name, clientId, budget, amountReceived, deadline, status, priority, description } = req.body;
 
         const project = await Project.findOne({ _id: req.params.id, userId, isDeleted: false });
         if (!project) {
             return res.status(404).json({ success: false, message: 'Project not found' });
         }
 
-        project.name = name || project.name;
-        project.clientId = clientId || project.clientId;
-        project.budget = budget !== undefined ? Number(budget) : project.budget;
-        project.value = budget !== undefined ? Number(budget) : project.value;
-        project.endDate = deadline ? new Date(deadline) : project.endDate;
-        project.status = status || project.status;
-        project.priority = priority || project.priority;
-        project.description = description !== undefined ? description : project.description;
+        if (name && name.trim()) {
+            project.name = name.trim();
+        }
+
+        if (budget !== undefined && budget !== '') {
+            project.budget = Number(budget) || 0;
+            project.value = Number(budget) || 0;
+        }
+
+        if (amountReceived !== undefined && amountReceived !== '') {
+            project.amountReceived = Number(amountReceived) || 0;
+        }
+
+        if (deadline && deadline.trim()) {
+            const parsedDate = new Date(deadline);
+            if (!isNaN(parsedDate.getTime())) {
+                project.endDate = parsedDate;
+            }
+        } else if (deadline === '') {
+            project.endDate = undefined;
+        }
+
+        if (status && ['planning', 'in_progress', 'completed', 'on_hold'].includes(status)) {
+            project.status = status;
+        }
+
+        if (priority && ['low', 'medium', 'high'].includes(priority)) {
+            project.priority = priority;
+        }
+
+        if (description !== undefined) {
+            project.description = description.trim();
+        }
+
+        // Track changes for activity log
+        const changes = [];
+        if (name && name.trim() && project.name !== name.trim()) changes.push(`name to '${name.trim()}'`);
+        if (status && project.status !== status) changes.push(`status to '${status.replace(/_/g, ' ')}'`);
+        if (budget !== undefined && budget !== '' && project.budget !== Number(budget)) changes.push(`budget`);
+        if (priority && project.priority !== priority) changes.push(`priority to '${priority}'`);
 
         await project.save();
 
+        // Log activity if there were changes
+        if (changes.length > 0) {
+            const Activity = require('../models/Activity');
+            const activity = new Activity({
+                userId,
+                projectId: project._id,
+                clientId: project.clientId,
+                type: 'general',
+                description: `Project updated: ${changes.join(', ')}`
+            });
+            await activity.save();
+        }
+
         res.json({ success: true, message: 'Project details updated successfully', project });
     } catch (err) {
+        console.error('Error updating project:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
@@ -217,10 +274,10 @@ exports.deleteProject = async (req, res, next) => {
 exports.toggleChecklist = async (req, res, next) => {
     try {
         const userId = req.session.userId;
-        const { item, completed } = req.body;
+        const { milestoneId, completed } = req.body;
 
-        if (!item) {
-            return res.status(400).json({ success: false, message: 'Checklist item key is required' });
+        if (!milestoneId) {
+            return res.status(400).json({ success: false, message: 'Milestone ID is required' });
         }
 
         const project = await Project.findOne({ _id: req.params.id, userId, isDeleted: false });
@@ -228,17 +285,18 @@ exports.toggleChecklist = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Project not found' });
         }
 
-        // Update the checklist subdocument
-        project.checklist[item] = !!completed;
+        // Find milestone subdocument
+        const milestone = project.checklist.id(milestoneId);
+        if (!milestone) {
+            return res.status(404).json({ success: false, message: 'Milestone not found' });
+        }
 
-        // Calculate progress percentage
-        const items = ['homepage', 'shop', 'adminPanel', 'testing', 'deployment', 'delivery'];
-        let completedCount = 0;
-        items.forEach(k => {
-            if (project.checklist[k]) completedCount++;
-        });
+        milestone.completed = !!completed;
 
-        const newProgress = Math.round((completedCount / items.length) * 100);
+        // Recalculate progress percentage
+        const totalCount = project.checklist.length;
+        const completedCount = project.checklist.filter(item => item.completed).length;
+        const newProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
         project.progress = newProgress;
 
         // Auto transition status to completed if checklist progress reaches 100%
@@ -249,13 +307,12 @@ exports.toggleChecklist = async (req, res, next) => {
         await project.save();
 
         // Log to activity timeline
-        const formattedItem = item.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         const activity = new Activity({
             userId,
             clientId: project.clientId,
             projectId: project._id,
             type: 'project',
-            description: `Milestone '${formattedItem}' marked as ${completed ? 'completed' : 'incomplete'} (Project progress: ${newProgress}%).`
+            description: `Milestone '${milestone.label}' marked as ${completed ? 'completed' : 'incomplete'} (Project progress: ${newProgress}%).`
         });
         await activity.save();
 
@@ -343,14 +400,14 @@ exports.toggleTask = async (req, res, next) => {
     }
 };
 
-// Add Project Payment Invoice
+// Add Project Payment Receipt
 exports.addProjectPayment = async (req, res, next) => {
     try {
         const userId = req.session.userId;
-        const { invoiceNumber, amount, dueDate, status } = req.body;
+        const { amount, date, method, notes } = req.body;
 
-        if (!invoiceNumber || !amount || !dueDate) {
-            return res.status(400).json({ success: false, message: 'Invoice number, amount and due date are required' });
+        if (!amount) {
+            return res.status(400).json({ success: false, message: 'Payment amount is required' });
         }
 
         const project = await Project.findOne({ _id: req.params.id, userId, isDeleted: false });
@@ -358,16 +415,30 @@ exports.addProjectPayment = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Project not found' });
         }
 
+        const receiptDate = date ? new Date(date) : new Date();
+        const invoiceNumber = `RCPT-${Date.now().toString().slice(-6)}`;
+
         const payment = new Payment({
             userId,
             clientId: project.clientId,
             projectId: project._id,
             invoiceNumber,
             amount: Number(amount) || 0,
-            dueDate: new Date(dueDate),
-            status: status || 'pending'
+            dueDate: receiptDate,
+            paidDate: receiptDate,
+            status: 'paid',
+            transactions: [{
+                amount: Number(amount) || 0,
+                date: receiptDate,
+                method: method || 'bank_transfer',
+                notes: notes || ''
+            }]
         });
         await payment.save();
+
+        // Increment project amountReceived
+        project.amountReceived = (project.amountReceived || 0) + Number(amount);
+        await project.save();
 
         // Log to timeline
         const activity = new Activity({
@@ -375,11 +446,11 @@ exports.addProjectPayment = async (req, res, next) => {
             clientId: project.clientId,
             projectId: project._id,
             type: 'payment',
-            description: `Issued invoice #${payment.invoiceNumber} for amount ₹${payment.amount.toLocaleString()} (Due Date: ${new Date(payment.dueDate).toLocaleDateString()}).`
+            description: `Recorded payment received of ₹${payment.amount.toLocaleString()} via ${method ? method.replace('_', ' ').toUpperCase() : 'BANK TRANSFER'} (Notes: ${notes || 'None'}).`
         });
         await activity.save();
 
-        res.status(201).json({ success: true, message: 'Invoice payment issued successfully', payment });
+        res.status(201).json({ success: true, message: 'Payment recorded successfully', payment });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -452,6 +523,108 @@ exports.logProjectActivity = async (req, res, next) => {
         await activity.save();
 
         res.status(201).json({ success: true, message: 'Activity interaction logged successfully', activity });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Add Custom Milestone
+exports.addMilestone = async (req, res, next) => {
+    try {
+        const userId = req.session.userId;
+        const { label } = req.body;
+
+        if (!label) {
+            return res.status(400).json({ success: false, message: 'Milestone label is required' });
+        }
+
+        const project = await Project.findOne({ _id: req.params.id, userId, isDeleted: false });
+        if (!project) {
+            return res.status(404).json({ success: false, message: 'Project not found' });
+        }
+
+        project.checklist.push({ label, completed: false });
+
+        // Recalculate progress percentage
+        const totalCount = project.checklist.length;
+        const completedCount = project.checklist.filter(item => item.completed).length;
+        const newProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        project.progress = newProgress;
+
+        // Auto transition status to completed if checklist progress reaches 100%
+        if (newProgress === 100 && project.status !== 'completed') {
+            project.status = 'completed';
+        }
+
+        await project.save();
+
+        // Log timeline activity
+        const activity = new Activity({
+            userId,
+            clientId: project.clientId,
+            projectId: project._id,
+            type: 'project',
+            description: `Added new milestone '${label}' to project checklist (Project progress: ${newProgress}%).`
+        });
+        await activity.save();
+
+        res.status(201).json({ 
+            success: true, 
+            message: `Milestone '${label}' added successfully`, 
+            progress: newProgress,
+            status: project.status,
+            checklist: project.checklist
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Delete Custom Milestone
+exports.deleteMilestone = async (req, res, next) => {
+    try {
+        const userId = req.session.userId;
+        const { milestoneId } = req.body;
+
+        if (!milestoneId) {
+            return res.status(400).json({ success: false, message: 'Milestone ID is required' });
+        }
+
+        const project = await Project.findOne({ _id: req.params.id, userId, isDeleted: false });
+        if (!project) {
+            return res.status(404).json({ success: false, message: 'Project not found' });
+        }
+
+        const milestone = project.checklist.id(milestoneId);
+        const milestoneLabel = milestone ? milestone.label : 'Unknown';
+
+        project.checklist = project.checklist.filter(item => item._id.toString() !== milestoneId);
+
+        // Recalculate progress percentage
+        const totalCount = project.checklist.length;
+        const completedCount = project.checklist.filter(item => item.completed).length;
+        const newProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        project.progress = newProgress;
+
+        await project.save();
+
+        // Log timeline activity
+        const activity = new Activity({
+            userId,
+            clientId: project.clientId,
+            projectId: project._id,
+            type: 'project',
+            description: `Deleted milestone '${milestoneLabel}' from project checklist (Project progress: ${newProgress}%).`
+        });
+        await activity.save();
+
+        res.json({ 
+            success: true, 
+            message: `Milestone deleted successfully`, 
+            progress: newProgress,
+            status: project.status,
+            checklist: project.checklist
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

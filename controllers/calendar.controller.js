@@ -99,22 +99,6 @@ exports.getCalendar = async (req, res, next) => {
             });
         });
 
-        // --- FETCH PAYMENT DUE DATES ---
-        const payments = await Payment.find({ userId, isDeleted: false, dueDate: { $ne: null } })
-            .populate('clientId', 'name');
-            
-        payments.forEach(pay => {
-            events.push({
-                id: pay._id,
-                type: 'payment',
-                title: `Invoice Due: #${pay.invoiceNumber}`,
-                description: `Billing Payment (Amount: ₹${pay.amount.toLocaleString('en-IN')})`,
-                date: pay.dueDate,
-                time: '',
-                link: pay.clientId ? `/clients/${pay.clientId._id}` : '/clients',
-                status: pay.status
-            });
-        });
 
         // --- FETCH TASKS ---
         const tasks = await Task.find({ userId, isDeleted: false, dueDate: { $ne: null } })

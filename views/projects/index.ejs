@@ -121,10 +121,10 @@
                         </div>
                     <% } else { %>
                         <% projects.forEach(project => { %>
-                            <div class="lead-card status-<%= project.status %>" onclick="window.location.href='/projects/<%= project._id %>'" style="cursor: pointer;">
+                            <div class="lead-card status-<%= project.status %>" onclick="window.location.href='/projects/<%= project._id %>'" style="cursor: pointer;" data-project="<%= JSON.stringify(project) %>">
                                 <div class="card-header">
                                     <div class="lead-meta" style="flex-wrap: wrap; gap: 6px;">
-                                        <span class="status-badge status-<%= project.status %>"><%= project.status.replace('_', ' ') %></span>
+                                        <span class="status-badge status-<%= project.status %>"><%= project.status.replace(/_/g, ' ') %></span>
                                         <span class="priority-badge priority-<%= project.priority %>"><%= project.priority %></span>
                                     </div>
                                     <button class="dropdown-trigger" onclick="event.stopPropagation(); toggleCardMenu('<%= project._id %>')">
@@ -132,8 +132,8 @@
                                     </button>
                                     <div class="dropdown-menu" id="menu-<%= project._id %>">
                                         <a href="/projects/<%= project._id %>">Open Workspace</a>
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal('<%= JSON.stringify(project) %>')">Edit Details</a>
-                                        <a href="#" class="delete-link" onclick="event.preventDefault(); event.stopPropagation(); deleteProjectPrompt('<%= project._id %>', '<%= project.name %>')">Delete Project</a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal(this.closest('.lead-card').dataset.project)">Edit Details</a>
+                                        <a href="#" class="delete-link" onclick="event.preventDefault(); event.stopPropagation(); deleteProjectPrompt('<%= project._id %>', this.closest('.lead-card').querySelector('h3').innerText)">Delete Project</a>
                                     </div>
                                 </div>
 
@@ -148,17 +148,6 @@
                                     <% } else { %>
                                         <p class="desc-preview" style="font-size: 13px; color: rgba(255, 255, 255, 0.25); margin-top: 8px; font-style: italic;">No description provided.</p>
                                     <% } %>
-
-                                    <!-- Progress bar component -->
-                                    <div class="progress-container">
-                                        <div class="progress-meta">
-                                            <span>Progress</span>
-                                            <span class="percent"><%= project.progress %>%</span>
-                                        </div>
-                                        <div class="progress-bar-bg">
-                                            <div class="progress-bar-fill" style="width: <%= project.progress %>%"></div>
-                                        </div>
-                                    </div>
 
                                     <!-- Budget & Deadline row -->
                                     <div class="project-card-meta">
@@ -444,8 +433,8 @@
         });
 
         // Open Edit Modal
-        function openEditModal(projectStr) {
-            const project = JSON.parse(projectStr);
+        function openEditModal(projectData) {
+            const project = typeof projectData === 'string' ? JSON.parse(projectData) : projectData;
             document.getElementById('edit_id').value = project._id;
             document.getElementById('edit_name').value = project.name;
             document.getElementById('edit_client').value = project.clientId._id || project.clientId;

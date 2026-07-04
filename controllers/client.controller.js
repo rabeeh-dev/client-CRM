@@ -24,10 +24,11 @@ const getClients = async (req, res, next) => {
             query.status = status;
         }
         if (rating && rating !== 'all') {
-            query.rating = Number(rating);
+            query.rating = { $gte: Number(rating) };
         }
         if (search) {
-            const regex = new RegExp(search, 'i');
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedSearch, 'i');
             query.$or = [
                 { name: regex },
                 { company: regex },
@@ -124,7 +125,7 @@ const createClient = async (req, res, next) => {
         const client = new Client({
             userId,
             name,
-            email: email || '',
+            email: email || undefined,
             phone: phone || '',
             company: company || '',
             rating: Number(rating) || 5,
@@ -173,7 +174,7 @@ const updateClient = async (req, res, next) => {
         }
 
         client.name = name;
-        client.email = email || '';
+        client.email = email || undefined;
         client.phone = phone || '';
         client.company = company || '';
         client.rating = Number(rating) || 5;
@@ -303,7 +304,7 @@ const addPayment = async (req, res, next) => {
             userId,
             clientId,
             type: 'payment',
-            description: `Invoice #${invoiceNumber} issued for ${formattedAmount} (Status: ${status.replace('_', ' ')})`
+            description: `Invoice #${invoiceNumber} issued for ${formattedAmount} (Status: ${(status || 'pending').replace(/_/g, ' ')})`
         });
         await activity.save();
 

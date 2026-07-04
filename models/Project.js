@@ -41,20 +41,30 @@ const projectSchema = new mongoose.Schema({
         default: 0,
         min: 0
     },
+    amountReceived: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
     progress: {
         type: Number,
         default: 0,
         min: 0,
         max: 100
     },
-    checklist: {
-        homepage: { type: Boolean, default: false },
-        shop: { type: Boolean, default: false },
-        adminPanel: { type: Boolean, default: false },
-        testing: { type: Boolean, default: false },
-        deployment: { type: Boolean, default: false },
-        delivery: { type: Boolean, default: false }
-    },
+    checklist: [
+        new mongoose.Schema({
+            label: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            completed: {
+                type: Boolean,
+                default: false
+            }
+        })
+    ],
     startDate: {
         type: Date
     },
@@ -69,9 +79,9 @@ const projectSchema = new mongoose.Schema({
 
 // Sync budget and value before saving
 projectSchema.pre('save', function(next) {
-    if (this.budget !== undefined) {
+    if (this.isModified('budget') && !this.isModified('value')) {
         this.value = this.budget;
-    } else if (this.value !== undefined) {
+    } else if (this.isModified('value') && !this.isModified('budget')) {
         this.budget = this.value;
     }
     next();

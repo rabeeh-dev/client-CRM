@@ -37,39 +37,45 @@
                 <!-- Header Panel -->
                 <section class="leads-header">
                     <div>
-                        <h1>Invoices & Payments</h1>
-                        <p>Track billing cycles, record invoice receipts, view installment payment histories, and check outstanding balances.</p>
+                        <h1>Payments Ledger</h1>
+                        <p>Track client project payments, advances, and partial payments received.</p>
                     </div>
                     <button class="btn btn-primary" id="openAddInvoiceBtn">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>Issue Invoice</span>
+                        <span>Record Payment</span>
                     </button>
                 </section>
 
                 <!-- Billing metrics grid -->
                 <section class="metrics-grid">
                     <div class="metric-card">
-                        <span class="title">Total Invoiced</span>
+                        <span class="title">Total Budgets</span>
                         <div class="value">
                             <%= metrics.totalInvoiced.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
                         </div>
                     </div>
                     <div class="metric-card">
-                        <span class="title">Collected Revenue</span>
+                        <span class="title">Amount Received</span>
                         <div class="value">
                             <%= metrics.collectedAmount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
                         </div>
                     </div>
                     <div class="metric-card">
-                        <span class="title">Outstanding Balance</span>
+                        <span class="title">Pending Balance</span>
                         <div class="value">
                             <%= metrics.outstandingBalance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
                         </div>
                     </div>
                     <div class="metric-card">
-                        <span class="title">Overdue Invoices</span>
-                        <div class="value <%= metrics.overdueCount > 0 ? 'text-danger' : '' %>" style="color: <%= metrics.overdueCount > 0 ? 'var(--danger)' : 'white' %>;">
-                            <%= metrics.overdueCount %>
+                        <span class="title">Revenue This Month</span>
+                        <div class="value" style="color: var(--success);">
+                            <%= metrics.revenueThisMonth.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <span class="title">Revenue This Year</span>
+                        <div class="value" style="color: var(--primary);">
+                            <%= metrics.revenueThisYear.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
                         </div>
                     </div>
                 </section>
@@ -110,24 +116,20 @@
                         <table class="payments-table" style="margin-top: 0; border: none; border-radius: 0;">
                             <thead>
                                 <tr>
-                                    <th>Invoice No</th>
+                                    <th>Receipt ID</th>
                                     <th>Client</th>
                                     <th>Project</th>
-                                    <th>Project Value</th>
-                                    <th>Invoice Amt</th>
-                                    <th>Paid Amt</th>
-                                    <th>Remaining Bal</th>
-                                    <th>Due Date</th>
-                                    <th>Status</th>
+                                    <th>Project Budget</th>
+                                    <th>Amount Received</th>
+                                    <th>Date Received</th>
+                                    <th>Payment Method</th>
                                     <th style="width: 60px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <% payments.forEach(payment => { %>
                                     <% 
-                                        let paidSum = 0;
-                                        payment.transactions.forEach(t => paidSum += t.amount);
-                                        const remaining = Math.max(0, payment.amount - paidSum);
+                                        const transaction = payment.transactions && payment.transactions[0] ? payment.transactions[0] : {};
                                     %>
                                     <tr onclick="window.location.href='/payments/<%= payment._id %>'" style="cursor: pointer;">
                                         <td><strong>#<%= payment.invoiceNumber %></strong></td>
@@ -156,15 +158,9 @@
                                                 <span style="color: rgba(255,255,255,0.4);">N/A</span>
                                             <% } %>
                                         </td>
-                                        <td class="amount-text"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
-                                        <td class="amount-text" style="color: var(--success);"><%= paidSum.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
-                                        <td class="amount-text" style="color: <%= remaining > 0 ? 'var(--warning)' : 'rgba(255,255,255,0.4)' %>;">
-                                            <%= remaining.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %>
-                                        </td>
-                                        <td><%= new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
-                                        <td>
-                                            <span class="status-badge status-<%= payment.status %>"><%= payment.status %></span>
-                                        </td>
+                                        <td class="amount-text" style="color: var(--success); font-weight: 600;"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
+                                        <td><%= new Date(payment.paidDate || payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                                        <td style="text-transform: uppercase; font-size: 12px; color: rgba(255, 255, 255, 0.7);"><%= (transaction.method || 'bank_transfer').replace('_', ' ') %></td>
                                          <td style="position: relative;" onclick="event.stopPropagation();">
                                              <button class="dropdown-trigger" onclick="toggleCardMenu('<%= payment._id %>')">
                                                  <i data-lucide="more-vertical"></i>
@@ -184,11 +180,11 @@
         </div>
     </div>
 
-    <!-- Modal: Add Invoice -->
+    <!-- Modal: Record Payment -->
     <div class="modal-backdrop" id="addInvoiceModal">
         <div class="modal-container">
             <div class="modal-header">
-                <h2>Issue Billing Invoice</h2>
+                <h2>Record Payment Received</h2>
                 <button class="modal-close" onclick="closeModal('addInvoiceModal')">
                     <i data-lucide="x"></i>
                 </button>
@@ -196,43 +192,42 @@
             <form id="addInvoiceForm" class="modal-form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="new_invoice">Invoice Number *</label>
-                        <input type="text" id="new_invoice" placeholder="INV-2026-001" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new_client">Client Account *</label>
-                        <select id="new_client" required onchange="filterProjectsDropdown(this.value)">
-                            <option value="">Select a Client...</option>
-                            <% clients.forEach(c => { %>
-                                <option value="<%= c._id %>"><%= c.name %></option>
+                        <label for="new_project">Select Project *</label>
+                        <select id="new_project" required>
+                            <option value="">Select a Project...</option>
+                            <% projects.forEach(p => { %>
+                                <option value="<%= p._id %>" data-client-id="<%= p.clientId._id || p.clientId %>"><%= p.name %> (<%= p.clientId.name %>)</option>
                             <% }) %>
                         </select>
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="new_amount">Invoice Amount (₹) *</label>
+                        <label for="new_amount">Payment Amount (₹) *</label>
                         <input type="number" id="new_amount" placeholder="50000" min="0" required>
                     </div>
-                    <div class="form-group">
-                        <label for="new_due">Due Date *</label>
-                        <input type="date" id="new_due" required>
-                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="new_project">Linked Project</label>
-                        <select id="new_project">
-                            <option value="">None / General Billing</option>
-                            <% projects.forEach(p => { %>
-                                <option value="<%= p._id %>" data-client-id="<%= p.clientId._id || p.clientId %>"><%= p.name %></option>
-                            <% }) %>
+                        <label for="new_due">Payment Date *</label>
+                        <input type="date" id="new_due" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_method">Payment Method</label>
+                        <select id="new_method">
+                            <option value="bank_transfer" selected>Bank Transfer</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Credit/Debit Card</option>
+                            <option value="upi">UPI / Digital Wallet</option>
+                            <option value="other">Other</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="new_notes">Payment Notes</label>
+                    <textarea id="new_notes" rows="2" placeholder="e.g. Advance payment, Milestone 1, Final settlement..."></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addInvoiceModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Invoice</button>
+                    <button type="submit" class="btn btn-primary">Record Payment</button>
                 </div>
             </form>
         </div>
@@ -327,40 +322,24 @@
             document.getElementById(modalId).classList.remove('active');
         }
 
-        // Add Invoice modal triggers
+        // Record Payment modal triggers
         document.getElementById('openAddInvoiceBtn').addEventListener('click', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('new_due').value = today;
             document.getElementById('addInvoiceModal').classList.add('active');
         });
 
-        // Filter projects based on client selection
-        function filterProjectsDropdown(clientId) {
-            const projSelect = document.getElementById('new_project');
-            const options = projSelect.querySelectorAll('option');
-            
-            options.forEach(opt => {
-                if (opt.value === "") {
-                    opt.style.display = "block";
-                    return;
-                }
-                const optClient = opt.dataset.clientId;
-                if (optClient === clientId) {
-                    opt.style.display = "block";
-                } else {
-                    opt.style.display = "none";
-                }
-            });
-            projSelect.value = ""; // Reset
-        }
-
-        // Add Invoice submission
+        // Add Payment submission
         document.getElementById('addInvoiceForm').addEventListener('submit', (e) => {
             e.preventDefault();
+            const projectSelect = document.getElementById('new_project');
+            
             const payload = {
-                invoiceNumber: document.getElementById('new_invoice').value,
-                clientId: document.getElementById('new_client').value,
-                projectId: document.getElementById('new_project').value,
+                projectId: projectSelect.value,
                 amount: document.getElementById('new_amount').value,
-                dueDate: document.getElementById('new_due').value
+                date: document.getElementById('new_due').value,
+                method: document.getElementById('new_method').value,
+                notes: document.getElementById('new_notes').value
             };
 
             fetch('/payments', {
@@ -376,7 +355,7 @@
                     document.getElementById('addInvoiceForm').reset();
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    showToast(data.message || 'Error creating invoice', 'danger');
+                    showToast(data.message || 'Error recording payment', 'danger');
                 }
             })
             .catch(err => {

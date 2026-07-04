@@ -111,10 +111,10 @@
                         </div>
                     <% } else { %>
                         <% leads.forEach(lead => { %>
-                            <div class="lead-card status-<%= lead.status %>" onclick="window.location.href='/leads/<%= lead._id %>'" style="cursor: pointer;">
+                            <div class="lead-card status-<%= lead.status %>" onclick="window.location.href='/leads/<%= lead._id %>'" style="cursor: pointer;" data-lead="<%= JSON.stringify(lead) %>">
                                 <div class="card-header">
                                     <div class="lead-meta">
-                                        <span class="status-badge"><%= lead.status.replace('_', ' ') %></span>
+                                        <span class="status-badge"><%= lead.status.replace(/_/g, ' ') %></span>
                                         <span class="priority-badge priority-<%= lead.priority %>"><%= lead.priority %></span>
                                     </div>
                                     <button class="dropdown-trigger" onclick="event.stopPropagation(); toggleCardMenu('<%= lead._id %>')">
@@ -122,15 +122,16 @@
                                     </button>
                                     <div class="dropdown-menu" id="menu-<%= lead._id %>">
                                         <a href="/leads/<%= lead._id %>">View Details</a>
-                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal('<%= JSON.stringify(lead) %>')">Edit Lead</a>
-                                        <a href="#" class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); deleteLeadPrompt('<%= lead._id %>', '<%= lead.name %>')">Delete Lead</a>
+                                        <a href="#" onclick="event.preventDefault(); event.stopPropagation(); openEditModal(this.closest('.lead-card').dataset.lead)">Edit Lead</a>
+                                        <a href="#" class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); deleteLeadPrompt('<%= lead._id %>', this.closest('.lead-card').querySelector('h3.name').innerText)">Delete Lead</a>
                                     </div>
                                 </div>
 
                                 <div class="card-body">
                                     <h3 class="name"><%= lead.name %></h3>
                                     <span class="company"><%= lead.company || 'Individual Freelancer' %></span>
-                                    <p class="notes-preview"><%= lead.notes ? lead.notes.replace(/<[^>]*>/g, '').substring(0, 100) : 'No notes recorded.' %>...</p>
+                                    <% const cleanNotes = lead.notes ? lead.notes.replace(/<[^>]*>/g, '') : ''; %>
+                                    <p class="notes-preview"><%= cleanNotes ? (cleanNotes.length > 100 ? cleanNotes.substring(0, 100) + '...' : cleanNotes) : 'No notes recorded.' %></p>
                                 </div>
 
                                 <div class="card-footer">
@@ -263,7 +264,7 @@
                     <i data-lucide="x"></i>
                 </button>
             </div>
-            <form action="#" class="modal-form" onsubmit="event.preventDefault(); showToast('Lead changes saved (Placeholder)', 'success'); closeModal('editLeadModal');">
+            <form id="editLeadForm" class="modal-form">
                 <input type="hidden" id="edit_id">
                 <div class="form-row">
                     <div class="form-group">
@@ -522,11 +523,13 @@
                     filterFormInput.form.submit();
                 }, 400); // 400ms debounce
             });
-            // Keep cursor at end of text on focus/reload
+            // Keep cursor at end of text on focus/reload if it has value
             const val = filterFormInput.value;
-            filterFormInput.value = '';
-            filterFormInput.value = val;
-            filterFormInput.focus();
+            if (val) {
+                filterFormInput.value = '';
+                filterFormInput.value = val;
+                filterFormInput.focus();
+            }
         }
 
         // Open Add Lead Modal
@@ -558,9 +561,52 @@
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
         });
 
+        // Edit Lead Form Submit
+        document.getElementById('editLeadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const payload = {
+                name: document.getElementById('edit_name').value,
+                email: document.getElementById('edit_email').value,
+                phone: document.getElementById('edit_phone').value,
+                company: document.getElementById('edit_company').value,
+                status: document.getElementById('edit_status').value,
+                priority: document.getElementById('edit_priority').value,
+                estimatedValue: document.getElementById('edit_value').value,
+                source: document.getElementById('edit_source').value,
+                notes: document.getElementById('edit_notes').value,
+                linkedin: document.getElementById('edit_linkedin').value,
+                twitter: document.getElementById('edit_twitter').value,
+                instagram: document.getElementById('edit_instagram').value,
+                whatsapp: document.getElementById('edit_whatsapp').value
+            };
+
+            fetch(`/leads/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Lead updated successfully', 'success');
+                    closeModal('editLeadModal');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || 'Error updating lead', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
+            });
+        });
+
         // Open edit modal and populate data
-        function openEditModal(leadDataStr) {
-            const lead = JSON.parse(leadDataStr);
+        function openEditModal(leadData) {
+            const lead = typeof leadData === 'string' ? JSON.parse(leadData) : leadData;
             
             document.getElementById('edit_id').value = lead._id;
             document.getElementById('edit_name').value = lead.name;

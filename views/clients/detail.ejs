@@ -139,9 +139,6 @@
                         <div class="tabs-container">
                             <div class="tabs-header">
                                 <button class="tab-btn active" onclick="switchTab(event, 'projectsTab')">Projects</button>
-                                <button class="tab-btn" onclick="switchTab(event, 'paymentsTab')">Payments</button>
-                                <button class="tab-btn" onclick="switchTab(event, 'documentsTab')">Documents</button>
-                                <button class="tab-btn" onclick="switchTab(event, 'emailsTab')">Emails</button>
                                 <button class="tab-btn" onclick="switchTab(event, 'timelineTab')">Activity Timeline</button>
                             </div>
 
@@ -161,10 +158,10 @@
                                         </div>
                                     <% } else { %>
                                         <% projects.forEach(project => { %>
-                                            <div class="project-item">
+                                            <div class="project-item" onclick="window.location.href='/projects/<%= project._id %>'" style="cursor: pointer;">
                                                 <div class="project-meta-row">
                                                     <h4 class="project-name"><%= project.name %></h4>
-                                                    <span class="status-badge status-<%= project.status %>"><%= project.status.replace('_', ' ') %></span>
+                                                    <span class="status-badge status-<%= project.status %>"><%= project.status.replace(/_/g, ' ') %></span>
                                                 </div>
                                                 <p class="project-desc"><%= project.description || 'No project description logged.' %></p>
                                                 <div class="project-details-grid">
@@ -180,112 +177,6 @@
                                                         </span>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        <% }) %>
-                                    <% } %>
-                                </div>
-                            </div>
-
-                            <!-- Payments Tab -->
-                            <div class="tab-content" id="paymentsTab">
-                                <div class="tab-section-header">
-                                    <h3>Invoicing & Payments</h3>
-                                    <button class="btn btn-secondary btn-sm" id="openAddPaymentBtn">
-                                        <i data-lucide="plus"></i>
-                                        <span>Issue Invoice</span>
-                                    </button>
-                                </div>
-                                <div class="payments-list">
-                                    <% if (payments.length === 0) { %>
-                                        <div class="empty-state-small">
-                                            <p>No invoice payments issued yet.</p>
-                                        </div>
-                                    <% } else { %>
-                                        <table class="payments-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Invoice No</th>
-                                                    <th>Amount</th>
-                                                    <th>Due Date</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <% payments.forEach(payment => { %>
-                                                    <tr>
-                                                        <td><strong>#<%= payment.invoiceNumber %></strong></td>
-                                                        <td class="amount-text"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
-                                                        <td><%= new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
-                                                        <td>
-                                                            <span class="status-badge status-<%= payment.status %>"><%= payment.status %></span>
-                                                        </td>
-                                                    </tr>
-                                                <% }) %>
-                                            </tbody>
-                                        </table>
-                                    <% } %>
-                                </div>
-                            </div>
-
-                            <!-- Documents Tab -->
-                            <div class="tab-content" id="documentsTab">
-                                <div class="tab-section-header">
-                                    <h3>Contract Documents</h3>
-                                    <button class="btn btn-secondary btn-sm" id="openAddDocBtn">
-                                        <i data-lucide="plus"></i>
-                                        <span>Add Document</span>
-                                    </button>
-                                </div>
-                                <div class="documents-list">
-                                    <% if (documents.length === 0) { %>
-                                        <div class="empty-state-small">
-                                            <p>No contract or NDA documents registered.</p>
-                                        </div>
-                                    <% } else { %>
-                                        <% documents.forEach(doc => { %>
-                                            <div class="document-item">
-                                                <div class="doc-icon-box">
-                                                    <i data-lucide="file-text"></i>
-                                                </div>
-                                                <div class="doc-info">
-                                                    <h4 class="doc-name"><a href="<%= doc.fileUrl %>" target="_blank"><%= doc.name %></a></h4>
-                                                    <span class="doc-meta"><%= doc.fileType %> • <%= doc.fileSize %> • Uploaded on <%= new Date(doc.uploadedAt).toLocaleDateString() %></span>
-                                                </div>
-                                                <a href="<%= doc.fileUrl %>" target="_blank" class="download-icon" title="View Document">
-                                                    <i data-lucide="external-link"></i>
-                                                </a>
-                                            </div>
-                                        <% }) %>
-                                    <% } %>
-                                </div>
-                            </div>
-
-                            <!-- Emails Tab -->
-                            <div class="tab-content" id="emailsTab">
-                                <div class="tab-section-header">
-                                    <h3>Email Correspondence Logs</h3>
-                                    <button class="btn btn-secondary btn-sm" id="openLogEmailBtn">
-                                        <i data-lucide="plus"></i>
-                                        <span>Log Sent Email</span>
-                                    </button>
-                                </div>
-                                <div class="emails-list">
-                                    <% const emails = activities.filter(a => a.type === 'email'); %>
-                                    <% if (emails.length === 0) { %>
-                                        <div class="empty-state-small">
-                                            <p>No emails logged. You can log outbound emails to track correspondence history.</p>
-                                        </div>
-                                    <% } else { %>
-                                        <% emails.forEach(email => { %>
-                                            <% const lines = email.description.split('\n\n'); %>
-                                            <% const subject = lines[0] ? lines[0].replace('Sent Email: ', '').replace(/"/g, '') : 'No Subject'; %>
-                                            <% const body = lines.slice(1).join('\n\n'); %>
-                                            <div class="email-item">
-                                                <div class="email-header">
-                                                    <span class="subject"><%= subject %></span>
-                                                    <span class="date"><%= new Date(email.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></span>
-                                                </div>
-                                                <div class="email-body"><%= body %></div>
                                             </div>
                                         <% }) %>
                                     <% } %>
@@ -485,129 +376,6 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addProjectModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Project</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Add Payment -->
-    <div class="modal-backdrop" id="addPaymentModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2>Issue New Invoice</h2>
-                <button class="modal-close" onclick="closeModal('addPaymentModal')">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <form id="addPaymentForm" class="modal-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pay_invoice">Invoice Number *</label>
-                        <input type="text" id="pay_invoice" placeholder="INV-2026-001" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="pay_amount">Invoice Amount *</label>
-                        <input type="number" id="pay_amount" placeholder="25000" min="0" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pay_status">Invoice Status</label>
-                        <select id="pay_status">
-                            <option value="pending" selected>Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="overdue">Overdue</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="pay_due">Due Date *</label>
-                        <input type="date" id="pay_due" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pay_project">Related Project</label>
-                        <select id="pay_project">
-                            <option value="">None / General Billing</option>
-                            <% projects.forEach(p => { %>
-                                <option value="<%= p._id %>"><%= p.name %></option>
-                            <% }) %>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('addPaymentModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Issue Invoice</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Add Document -->
-    <div class="modal-backdrop" id="addDocModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2>Upload Document Link</h2>
-                <button class="modal-close" onclick="closeModal('addDocModal')">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <form id="addDocForm" class="modal-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="doc_name">Document Name *</label>
-                        <input type="text" id="doc_name" placeholder="Service Level Agreement" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="doc_url">Document File Link (URL) *</label>
-                        <input type="url" id="doc_url" placeholder="https://drive.google.com/.../file" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="doc_size">File Size</label>
-                        <input type="text" id="doc_size" placeholder="1.4 MB" value="1.2 MB">
-                    </div>
-                    <div class="form-group">
-                        <label for="doc_type">File Extension Type</label>
-                        <select id="doc_type">
-                            <option value="PDF" selected>PDF</option>
-                            <option value="DOCX">Word Document (.docx)</option>
-                            <option value="XLSX">Spreadsheet (.xlsx)</option>
-                            <option value="ZIP">Archive (.zip)</option>
-                            <option value="OTHER">Other</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('addDocModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Register Document</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Log Email -->
-    <div class="modal-backdrop" id="logEmailModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2>Log Correspondence Email</h2>
-                <button class="modal-close" onclick="closeModal('logEmailModal')">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <form id="logEmailForm" class="modal-form">
-                <div class="form-group">
-                    <label for="email_subject">Subject *</label>
-                    <input type="text" id="email_subject" placeholder="Scope Approval and Invoice #012" required>
-                </div>
-                <div class="form-group">
-                    <label for="email_body">Email Message *</label>
-                    <textarea id="email_body" rows="6" placeholder="Paste sent email body copy or summary correspondence..." required></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('logEmailModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Log Sent Email</button>
                 </div>
             </form>
         </div>
@@ -822,95 +590,6 @@
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(data.message || 'Error creating project', 'danger');
-                }
-            });
-        });
-
-        // Add Payment triggers
-        document.getElementById('openAddPaymentBtn').addEventListener('click', () => {
-            document.getElementById('addPaymentModal').classList.add('active');
-        });
-        document.getElementById('addPaymentForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const payload = {
-                invoiceNumber: document.getElementById('pay_invoice').value,
-                amount: document.getElementById('pay_amount').value,
-                status: document.getElementById('pay_status').value,
-                dueDate: document.getElementById('pay_due').value,
-                projectId: document.getElementById('pay_project').value
-            };
-            fetch('/clients/<%= clientRecord._id %>/payments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    closeModal('addPaymentModal');
-                    document.getElementById('addPaymentForm').reset();
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    showToast(data.message || 'Error recording payment', 'danger');
-                }
-            });
-        });
-
-        // Add Document triggers
-        document.getElementById('openAddDocBtn').addEventListener('click', () => {
-            document.getElementById('addDocModal').classList.add('active');
-        });
-        document.getElementById('addDocForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const payload = {
-                name: document.getElementById('doc_name').value,
-                fileUrl: document.getElementById('doc_url').value,
-                fileSize: document.getElementById('doc_size').value,
-                fileType: document.getElementById('doc_type').value
-            };
-            fetch('/clients/<%= clientRecord._id %>/documents', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    closeModal('addDocModal');
-                    document.getElementById('addDocForm').reset();
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    showToast(data.message || 'Error registering document', 'danger');
-                }
-            });
-        });
-
-        // Log Email triggers
-        document.getElementById('openLogEmailBtn').addEventListener('click', () => {
-            document.getElementById('logEmailModal').classList.add('active');
-        });
-        document.getElementById('logEmailForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const payload = {
-                subject: document.getElementById('email_subject').value,
-                body: document.getElementById('email_body').value
-            };
-            fetch('/clients/<%= clientRecord._id %>/emails', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    closeModal('logEmailModal');
-                    document.getElementById('logEmailForm').reset();
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    showToast(data.message || 'Error logging email', 'danger');
                 }
             });
         });

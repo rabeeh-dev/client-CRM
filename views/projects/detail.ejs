@@ -81,8 +81,24 @@
                                     <span class="val"><a href="/clients/<%= project.clientId._id %>" style="color: var(--primary); text-decoration: underline;"><%= project.clientId.name %></a></span>
                                 </div>
                                 <div class="detail-row">
+                                    <span class="label">Project Status</span>
+                                    <span class="val" style="text-transform: capitalize; font-weight: 600; color: <%= 
+                                        project.status === 'completed' ? 'var(--success)' : 
+                                        project.status === 'in_progress' ? 'var(--primary)' : 
+                                        project.status === 'on_hold' ? 'var(--danger)' : 'rgba(255,255,255,0.7)' 
+                                    %>;"><%= project.status.replace('_', ' ') %></span>
+                                </div>
+                                <div class="detail-row">
                                     <span class="label">Project Budget</span>
                                     <span class="val" style="font-weight: 600; color: white;"><%= (project.budget || project.value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Amount Received</span>
+                                    <span class="val" style="font-weight: 600; color: var(--success);"><%= totalPaid.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Remaining Balance</span>
+                                    <span class="val" style="font-weight: 600; color: var(--warning);"><%= remainingBalance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></span>
                                 </div>
                                 <div class="detail-row">
                                     <span class="label">Deadline Target</span>
@@ -94,14 +110,15 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Right: Sub-Resource Tabs Workspace -->
                     <div class="details-main">
                         <div class="tabs-container">
-                            <div class="tabs-header">
+                             <div class="tabs-header">
                                 <button class="tab-btn active" onclick="switchTab(event, 'tasksTab')">Tasks List</button>
-                                <button class="tab-btn" onclick="switchTab(event, 'paymentsTab')">Payments</button>
+                                <button class="tab-btn" onclick="switchTab(event, 'paymentsTab')">Payments Ledger</button>
                                 <button class="tab-btn" onclick="switchTab(event, 'timelineTab')">Activity Timeline</button>
                             </div>
 
@@ -141,36 +158,49 @@
                             <!-- Payments Tab -->
                             <div class="tab-content" id="paymentsTab">
                                 <div class="tab-section-header">
-                                    <h3>Project Billing Invoices</h3>
+                                    <h3>Project Payments Ledger</h3>
                                     <button class="btn btn-secondary btn-sm" id="openAddPaymentBtn">
                                         <i data-lucide="plus"></i>
-                                        <span>Issue Invoice</span>
+                                        <span>Record Payment</span>
                                     </button>
+                                </div>
+                                <div class="payments-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                                    <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                                        <span class="title" style="display: block; font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-bottom: 5px;">Project Budget</span>
+                                        <div class="value" style="font-size: 18px; font-weight: 600; color: white;"><%= (project.budget || project.value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></div>
+                                    </div>
+                                    <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                                        <span class="title" style="display: block; font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-bottom: 5px;">Amount Received</span>
+                                        <div class="value" style="font-size: 18px; font-weight: 600; color: var(--success);"><%= totalPaid.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></div>
+                                    </div>
+                                    <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                                        <span class="title" style="display: block; font-size: 12px; color: rgba(255, 255, 255, 0.5); margin-bottom: 5px;">Pending Balance</span>
+                                        <div class="value" style="font-size: 18px; font-weight: 600; color: var(--warning);"><%= remainingBalance.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></div>
+                                    </div>
                                 </div>
                                 <div class="payments-list">
                                     <% if (payments.length === 0) { %>
                                         <div class="empty-state-small">
-                                            <p>No invoice payments issued yet for this project.</p>
+                                            <p>No payments recorded yet for this project.</p>
                                         </div>
                                     <% } else { %>
-                                        <table class="payments-table">
+                                        <table class="payments-table" style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px;">
                                             <thead>
-                                                <tr>
-                                                    <th>Invoice No</th>
-                                                    <th>Amount</th>
-                                                    <th>Due Date</th>
-                                                    <th>Status</th>
+                                                <tr style="border-bottom: 1px solid var(--border-color); color: rgba(255,255,255,0.45); font-size: 12px;">
+                                                    <th style="padding: 12px 8px;">Date Received</th>
+                                                    <th style="padding: 12px 8px;">Amount</th>
+                                                    <th style="padding: 12px 8px;">Payment Method</th>
+                                                    <th style="padding: 12px 8px;">Notes</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <% payments.forEach(payment => { %>
-                                                    <tr>
-                                                        <td><strong>#<%= payment.invoiceNumber %></strong></td>
-                                                        <td class="amount-text"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
-                                                        <td><%= new Date(payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
-                                                        <td>
-                                                            <span class="status-badge status-<%= payment.status %>"><%= payment.status %></span>
-                                                        </td>
+                                                    <% const transaction = payment.transactions && payment.transactions[0] ? payment.transactions[0] : {} %>
+                                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px;">
+                                                        <td style="padding: 12px 8px;"><%= new Date(payment.paidDate || payment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                                                        <td style="padding: 12px 8px; color: var(--success); font-weight: 600;"><%= payment.amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) %></td>
+                                                        <td style="padding: 12px 8px; text-transform: uppercase; font-size: 11px; color: rgba(255, 255, 255, 0.7);"><%= (transaction.method || 'bank_transfer').replace('_', ' ') %></td>
+                                                        <td style="padding: 12px 8px; color: rgba(255, 255, 255, 0.6);"><%= transaction.notes || 'N/A' %></td>
                                                     </tr>
                                                 <% }) %>
                                             </tbody>
@@ -178,8 +208,6 @@
                                     <% } %>
                                 </div>
                             </div>
-
-
 
                             <!-- Activity Timeline Tab -->
                             <div class="tab-content" id="timelineTab">
@@ -261,12 +289,12 @@
                         <label for="edit_budget">Project Budget (₹) *</label>
                         <input type="number" id="edit_budget" value="<%= project.budget || project.value || 0 %>" min="0" required>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label for="edit_deadline">Deadline Date</label>
                         <input type="date" id="edit_deadline" value="<%= project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '' %>">
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
                         <label for="edit_status">Project Status</label>
                         <select id="edit_status">
@@ -276,6 +304,8 @@
                             <option value="on_hold" <%= project.status === 'on_hold' ? 'selected' : '' %>>On Hold</option>
                         </select>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label for="edit_priority">Project Priority</label>
                         <select id="edit_priority">
@@ -333,11 +363,13 @@
         </div>
     </div>
 
+
+
     <!-- Modal: Add Payment -->
     <div class="modal-backdrop" id="addPaymentModal">
         <div class="modal-container">
             <div class="modal-header">
-                <h2>Issue Project Invoice</h2>
+                <h2>Record Payment Received</h2>
                 <button class="modal-close" onclick="closeModal('addPaymentModal')">
                     <i data-lucide="x"></i>
                 </button>
@@ -345,31 +377,33 @@
             <form id="addPaymentForm" class="modal-form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="pay_invoice">Invoice Number *</label>
-                        <input type="text" id="pay_invoice" placeholder="INV-PROJ-001" required>
+                        <label for="pay_amount">Payment Amount Received (₹) *</label>
+                        <input type="number" id="pay_amount" placeholder="25000" min="0" required>
                     </div>
                     <div class="form-group">
-                        <label for="pay_amount">Invoice Amount *</label>
-                        <input type="number" id="pay_amount" placeholder="45000" min="0" required>
+                        <label for="pay_date">Payment Date *</label>
+                        <input type="date" id="pay_date" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="pay_status">Invoice Status</label>
-                        <select id="pay_status">
-                            <option value="pending" selected>Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="overdue">Overdue</option>
+                        <label for="pay_method">Payment Method</label>
+                        <select id="pay_method">
+                            <option value="bank_transfer" selected>Bank Transfer</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Credit/Debit Card</option>
+                            <option value="upi">UPI / Digital Wallet</option>
+                            <option value="other">Other</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="pay_due">Due Date *</label>
-                        <input type="date" id="pay_due" required>
-                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pay_notes">Payment Notes</label>
+                    <textarea id="pay_notes" rows="2" placeholder="e.g. Advance payment, Milestone 1, Final settlement..."></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addPaymentModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Issue Invoice</button>
+                    <button type="submit" class="btn btn-primary">Record Payment</button>
                 </div>
             </form>
         </div>
@@ -541,12 +575,21 @@
         document.getElementById('openAddTaskBtn').addEventListener('click', () => {
             document.getElementById('addTaskModal').classList.add('active');
         });
-        document.getElementById('openAddPaymentBtn').addEventListener('click', () => {
-            document.getElementById('addPaymentModal').classList.add('active');
-        });
-        document.getElementById('openAddDocBtn').addEventListener('click', () => {
-            document.getElementById('addDocModal').classList.add('active');
-        });
+        const addPaymentBtn = document.getElementById('openAddPaymentBtn');
+        if (addPaymentBtn) {
+            addPaymentBtn.addEventListener('click', () => {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('pay_date').value = today;
+                document.getElementById('addPaymentModal').classList.add('active');
+            });
+        }
+
+        const addDocBtn = document.getElementById('openAddDocBtn');
+        if (addDocBtn) {
+            addDocBtn.addEventListener('click', () => {
+                document.getElementById('addDocModal').classList.add('active');
+            });
+        }
         document.getElementById('openAddActivityBtn').addEventListener('click', () => {
             document.getElementById('logActivityModal').classList.add('active');
         });
@@ -664,14 +707,16 @@
             });
         }
 
-        // Issue Project Invoice Payment
+
+
+        // Record Project Payment received
         document.getElementById('addPaymentForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const payload = {
-                invoiceNumber: document.getElementById('pay_invoice').value,
                 amount: document.getElementById('pay_amount').value,
-                status: document.getElementById('pay_status').value,
-                dueDate: document.getElementById('pay_due').value
+                date: document.getElementById('pay_date').value,
+                method: document.getElementById('pay_method').value,
+                notes: document.getElementById('pay_notes').value
             };
 
             fetch('/projects/<%= project._id %>/payments', {
@@ -687,8 +732,12 @@
                     document.getElementById('addPaymentForm').reset();
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    showToast(data.message || 'Error issuing invoice', 'danger');
+                    showToast(data.message || 'Error recording payment', 'danger');
                 }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Server connection error', 'danger');
             });
         });
 
@@ -745,6 +794,7 @@
                 }
             });
         });
+
     </script>
 </body>
 </html>

@@ -11,8 +11,20 @@ exports.getPayments = async (req, res, next) => {
 
         // Build query
         const query = { userId, isDeleted: false };
+        const today = new Date();
+        
         if (status) {
-            query.status = status;
+            if (status === 'overdue') {
+                query.$or = [
+                    { status: 'overdue' },
+                    { status: 'pending', dueDate: { $lt: today } }
+                ];
+            } else if (status === 'pending') {
+                query.status = 'pending';
+                query.dueDate = { $gte: today };
+            } else {
+                query.status = status;
+            }
         }
         if (search) {
             query.invoiceNumber = { $regex: search, $options: 'i' };
@@ -21,7 +33,7 @@ exports.getPayments = async (req, res, next) => {
         // Fetch payments/invoices
         const payments = await Payment.find(query)
             .populate('clientId', 'name company')
-            .populate('projectId', 'name')
+            .populate('projectId', 'name budget value')
             .sort({ createdAt: -1 });
 
         // Calculate billing metrics across all active invoices (unfiltered)
@@ -29,18 +41,28 @@ exports.getPayments = async (req, res, next) => {
         let totalInvoiced = 0;
         let collectedAmount = 0;
         let overdueCount = 0;
+        let revenueThisMonth = 0;
+        let revenueThisYear = 0;
 
-        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const endOfYear = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
 
         allPayments.forEach(pay => {
             totalInvoiced += pay.amount;
             
-            // Sum all transaction amounts
-            let paidSum = 0;
             pay.transactions.forEach(t => {
-                paidSum += t.amount;
+                collectedAmount += t.amount;
+                
+                const tDate = new Date(t.date);
+                if (tDate >= startOfMonth && tDate <= endOfMonth) {
+                    revenueThisMonth += t.amount;
+                }
+                if (tDate >= startOfYear && tDate <= endOfYear) {
+                    revenueThisYear += t.amount;
+                }
             });
-            collectedAmount += paidSum;
 
             // Check overdue
             const isOverdue = pay.status !== 'paid' && pay.dueDate < today;
@@ -49,22 +71,29 @@ exports.getPayments = async (req, res, next) => {
             }
         });
 
-        const outstandingBalance = totalInvoiced - collectedAmount;
-
         // Get list of clients & projects for selector dropdowns in Add Invoice modal
         const clients = await Client.find({ userId, isDeleted: false }).sort({ name: 1 });
         const projects = await Project.find({ userId, isDeleted: false }).sort({ name: 1 });
 
+        let totalContracted = 0;
+        projects.forEach(p => {
+            totalContracted += (p.budget || p.value || 0);
+        });
+
+        const outstandingBalance = Math.max(0, totalContracted - collectedAmount);
+
         res.render('payments/index', {
-            title: 'Invoice Payments | Client CRM',
+            title: 'Payments Ledger | Client CRM',
             payments,
             clients,
             projects,
             metrics: {
-                totalInvoiced,
+                totalInvoiced: totalContracted, // alias as totalInvoiced for template compatibility
                 collectedAmount,
                 outstandingBalance,
-                overdueCount
+                overdueCount,
+                revenueThisMonth,
+                revenueThisYear
             },
             filters: {
                 search: search || '',
@@ -111,39 +140,58 @@ exports.getPaymentDetail = async (req, res, next) => {
     }
 };
 
-// Create a Payment Invoice
+// Create a Payment Receipt
 exports.createInvoice = async (req, res, next) => {
     try {
         const userId = req.session.userId;
-        const { invoiceNumber, amount, dueDate, clientId, projectId } = req.body;
+        const { amount, date, method, notes, projectId } = req.body;
 
-        if (!invoiceNumber || !amount || !dueDate || !clientId) {
-            return res.status(400).json({ success: false, message: 'Invoice number, amount, due date and client are required' });
+        if (!amount || !projectId) {
+            return res.status(400).json({ success: false, message: 'Payment amount and project are required' });
         }
+
+        const project = await Project.findOne({ _id: projectId, userId, isDeleted: false });
+        if (!project) {
+            return res.status(404).json({ success: false, message: 'Project not found' });
+        }
+
+        const receiptDate = date ? new Date(date) : new Date();
+        const invoiceNumber = `RCPT-${Date.now().toString().slice(-6)}`;
 
         const payment = new Payment({
             userId,
-            clientId,
-            projectId: projectId || undefined,
+            clientId: project.clientId,
+            projectId: project._id,
             invoiceNumber,
             amount: Number(amount) || 0,
-            dueDate: new Date(dueDate),
-            status: 'pending'
+            dueDate: receiptDate,
+            paidDate: receiptDate,
+            status: 'paid',
+            transactions: [{
+                amount: Number(amount) || 0,
+                date: receiptDate,
+                method: method || 'bank_transfer',
+                notes: notes || ''
+            }]
         });
 
         await payment.save();
 
+        // Increment project amountReceived
+        project.amountReceived = (project.amountReceived || 0) + Number(amount);
+        await project.save();
+
         // Log timeline activity
         const activity = new Activity({
             userId,
-            clientId,
-            projectId: projectId || undefined,
+            clientId: project.clientId,
+            projectId: project._id,
             type: 'payment',
-            description: `Invoice #${payment.invoiceNumber} created for amount ₹${payment.amount.toLocaleString()} (Due Date: ${new Date(payment.dueDate).toLocaleDateString()}).`
+            description: `Recorded payment received of ₹${payment.amount.toLocaleString()} via ${method ? method.replace('_', ' ').toUpperCase() : 'BANK TRANSFER'} for project '${project.name}' (Notes: ${notes || 'None'}).`
         });
         await activity.save();
 
-        res.status(201).json({ success: true, message: 'Invoice created successfully', payment });
+        res.status(201).json({ success: true, message: 'Payment recorded successfully', payment });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -187,6 +235,15 @@ exports.addTransaction = async (req, res, next) => {
 
         await payment.save();
 
+        // Increment project amountReceived
+        if (payment.projectId) {
+            const project = await Project.findOne({ _id: payment.projectId, userId });
+            if (project) {
+                project.amountReceived = (project.amountReceived || 0) + Number(amount);
+                await project.save();
+            }
+        }
+
         // Log to activity timeline
         const formattedMethod = method ? method.replace('_', ' ').toUpperCase() : 'BANK TRANSFER';
         const activity = new Activity({
@@ -221,6 +278,19 @@ exports.deleteInvoice = async (req, res, next) => {
 
         payment.isDeleted = true;
         await payment.save();
+
+        // Decrement project amountReceived by the total paid on this invoice
+        if (payment.projectId) {
+            const project = await Project.findOne({ _id: payment.projectId, userId });
+            if (project) {
+                let totalPaid = 0;
+                payment.transactions.forEach(t => {
+                    totalPaid += t.amount;
+                });
+                project.amountReceived = Math.max(0, (project.amountReceived || 0) - totalPaid);
+                await project.save();
+            }
+        }
 
         res.json({ success: true, message: `Invoice #${payment.invoiceNumber} deleted successfully` });
     } catch (err) {

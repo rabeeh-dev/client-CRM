@@ -43,7 +43,7 @@
                     </div>
                     <div class="welcome-date">
                         <i data-lucide="calendar"></i>
-                        <span id="currentDate">July 2, 2026</span>
+                        <span id="currentDate"><%= new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></span>
                     </div>
                 </section>
 
@@ -59,7 +59,7 @@
                         <div class="card-value"><%= data.activeClients %></div>
                         <div class="card-footer text-success">
                             <i data-lucide="trending-up"></i>
-                            <span>+2 new this month</span>
+                            <span>+<%= data.stats.newClientsThisMonth %> new this month</span>
                         </div>
                     </div>
 
@@ -73,7 +73,7 @@
                         <div class="card-value"><%= data.activeProjects %></div>
                         <div class="card-footer text-success">
                             <i data-lucide="check"></i>
-                            <span>4 nearing completion</span>
+                            <span><%= data.stats.projectsNearingCompletion %> nearing completion</span>
                         </div>
                     </div>
 
@@ -85,9 +85,9 @@
                             </div>
                         </div>
                         <div class="card-value"><%= data.pendingPayments %></div>
-                        <div class="card-footer text-danger">
-                            <i data-lucide="alert-circle"></i>
-                            <span>3 payments overdue</span>
+                        <div class="card-footer text-warning" style="color: var(--warning);">
+                            <i data-lucide="info"></i>
+                            <span>Outstanding project balance</span>
                         </div>
                     </div>
 
@@ -99,9 +99,9 @@
                             </div>
                         </div>
                         <div class="card-value"><%= data.revenueThisMonth %></div>
-                        <div class="card-footer text-success">
-                            <i data-lucide="trending-up"></i>
-                            <span>12% increase from June</span>
+                        <div class="card-footer <%= data.stats.revenueGrowth >= 0 ? 'text-success' : 'text-danger' %>">
+                            <i data-lucide="<%= data.stats.revenueGrowth >= 0 ? 'trending-up' : 'trending-down' %>"></i>
+                            <span><%= Math.abs(data.stats.revenueGrowth) %>% <%= data.stats.revenueGrowth >= 0 ? 'increase' : 'decrease' %> from <%= data.stats.lastMonthName %></span>
                         </div>
                     </div>
                 </section>
@@ -115,7 +115,7 @@
                         <div class="panel chart-panel">
                             <div class="panel-header">
                                 <h2>Revenue Trend</h2>
-                                <span class="subtitle">Last 6 Months (Mocked)</span>
+                                <span class="subtitle">Last 6 Months</span>
                             </div>
                             <div class="panel-content chart-container">
                                 <canvas id="revenueChart"></canvas>
@@ -130,21 +130,27 @@
                             </div>
                             <div class="panel-content">
                                 <div class="timeline">
-                                    <% data.activities.forEach(activity => { %>
-                                        <div class="timeline-item">
-                                            <div class="timeline-icon">
-                                                <i data-lucide="<%= activity.icon %>"></i>
-                                            </div>
-                                            <div class="timeline-content">
-                                                <div class="timeline-meta">
-                                                    <span class="action"><%= activity.action %></span>
-                                                    <span class="time"><%= activity.time %></span>
-                                                </div>
-                                                <p class="desc"><%= activity.description %></p>
-                                                <span class="client-badge"><%= activity.client %></span>
-                                            </div>
+                                    <% if (data.activities.length === 0) { %>
+                                        <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.3); font-size: 14px;">
+                                            No recent activities logged.
                                         </div>
-                                    <% }) %>
+                                    <% } else { %>
+                                        <% data.activities.forEach(activity => { %>
+                                            <div class="timeline-item">
+                                                <div class="timeline-icon">
+                                                    <i data-lucide="<%= activity.icon %>"></i>
+                                                </div>
+                                                <div class="timeline-content">
+                                                    <div class="timeline-meta">
+                                                        <span class="action"><%= activity.action %></span>
+                                                        <span class="time"><%= activity.time %></span>
+                                                    </div>
+                                                    <p class="desc"><%= activity.description %></p>
+                                                    <span class="client-badge"><%= activity.client %></span>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    <% } %>
                                 </div>
                             </div>
                         </div>
@@ -186,24 +192,30 @@
                             </div>
                             <div class="panel-content">
                                 <ul class="task-list">
-                                    <% data.tasks.forEach(task => { %>
-                                        <li class="task-item">
-                                            <div class="task-main">
-                                                <label class="task-checkbox">
-                                                    <input type="checkbox">
-                                                    <span class="checkbox-box"></span>
-                                                </label>
-                                                <div class="task-info">
-                                                    <span class="task-title"><%= task.title %></span>
-                                                    <span class="task-project"><%= task.project %></span>
+                                    <% if (data.tasks.length === 0) { %>
+                                        <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.3); font-size: 14px;">
+                                            No tasks due today.
+                                        </div>
+                                    <% } else { %>
+                                        <% data.tasks.forEach(task => { %>
+                                            <li class="task-item">
+                                                <div class="task-main">
+                                                    <label class="task-checkbox">
+                                                        <input type="checkbox" onchange="toggleDashboardTask('<%= task.id %>', this)">
+                                                        <span class="checkbox-box"></span>
+                                                    </label>
+                                                    <div class="task-info">
+                                                        <span class="task-title"><%= task.title %></span>
+                                                        <span class="task-project"><%= task.project %></span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="task-meta">
-                                                <span class="task-priority priority-<%= task.priority %>"><%= task.priority %></span>
-                                                <span class="task-due"><%= task.due %></span>
-                                            </div>
-                                        </li>
-                                    <% }) %>
+                                                <div class="task-meta">
+                                                    <span class="task-priority priority-<%= task.priority %>"><%= task.priority %></span>
+                                                    <span class="task-due"><%= task.due %></span>
+                                                </div>
+                                            </li>
+                                        <% }) %>
+                                    <% } %>
                                 </ul>
                             </div>
                         </div>
@@ -215,22 +227,28 @@
                             </div>
                             <div class="panel-content">
                                 <ul class="deadline-list">
-                                    <% data.deadlines.forEach(deadline => { %>
-                                        <li class="deadline-item">
-                                            <div class="deadline-left">
-                                                <div class="deadline-icon-box deadline-<%= deadline.type %>">
-                                                    <i data-lucide="<%= deadline.type === 'contract' ? 'file-text' : (deadline.type === 'design' ? 'palette' : 'archive') %>"></i>
+                                    <% if (data.deadlines.length === 0) { %>
+                                        <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.3); font-size: 14px;">
+                                            No upcoming deadlines.
+                                        </div>
+                                    <% } else { %>
+                                        <% data.deadlines.forEach(deadline => { %>
+                                            <li class="deadline-item">
+                                                <div class="deadline-left">
+                                                    <div class="deadline-icon-box deadline-<%= deadline.type %>">
+                                                        <i data-lucide="<%= deadline.type === 'contract' ? 'file-text' : (deadline.type === 'design' ? 'palette' : 'archive') %>"></i>
+                                                    </div>
+                                                    <div class="deadline-info">
+                                                        <span class="deadline-name"><%= deadline.name %></span>
+                                                        <span class="deadline-project"><%= deadline.project %></span>
+                                                    </div>
                                                 </div>
-                                                <div class="deadline-info">
-                                                    <span class="deadline-name"><%= deadline.name %></span>
-                                                    <span class="deadline-project"><%= deadline.project %></span>
+                                                <div class="deadline-date">
+                                                    <span><%= deadline.date %></span>
                                                 </div>
-                                            </div>
-                                            <div class="deadline-date">
-                                                <span><%= deadline.date %></span>
-                                            </div>
-                                        </li>
-                                    <% }) %>
+                                            </li>
+                                        <% }) %>
+                                    <% } %>
                                 </ul>
                             </div>
                         </div>
@@ -310,6 +328,41 @@
                 }
             }
         });
+
+        function toggleDashboardTask(id, checkbox) {
+            if (checkbox.checked) {
+                fetch(`/tasks/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'completed' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message || 'Task completed!', 'success');
+                        const item = checkbox.closest('.task-item');
+                        item.style.transition = 'opacity 0.4s ease';
+                        item.style.opacity = '0';
+                        setTimeout(() => {
+                            item.remove();
+                            const badge = document.querySelector('.tasks-panel .badge');
+                            if (badge) {
+                                const currentCount = parseInt(badge.innerText) || 0;
+                                badge.innerText = `${Math.max(0, currentCount - 1)} Tasks`;
+                            }
+                        }, 400);
+                    } else {
+                        checkbox.checked = false;
+                        showToast(data.message || 'Error updating task', 'danger');
+                    }
+                })
+                .catch(err => {
+                    checkbox.checked = false;
+                    console.error(err);
+                    showToast('Server connection error', 'danger');
+                });
+            }
+        }
     </script>
 </body>
 </html>

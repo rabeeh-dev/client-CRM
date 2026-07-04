@@ -24,10 +24,16 @@ exports.getDashboard = async (req, res) => {
         const monthlyRevenueAgg = await Payment.aggregate([
             { $match: { userId: objectIdUser, status: 'paid', isDeleted: false } },
             {
+                $project: {
+                    amount: 1,
+                    revenueDate: { $ifNull: ["$paidDate", "$createdAt"] }
+                }
+            },
+            {
                 $group: {
                     _id: {
-                        year: { $year: "$paidDate" },
-                        month: { $month: "$paidDate" }
+                        year: { $year: "$revenueDate" },
+                        month: { $month: "$revenueDate" }
                     },
                     total: { $sum: "$amount" }
                 }

@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
 
 /**
@@ -15,8 +16,8 @@ const getLogin = (req, res) => {
 
 /**
  * Process the login request.
- * Authenticates directly against the environment variables as the source of truth,
- * then transparently synchronises the MongoDB User profile.
+ * Authenticates against the hashed password stored in MongoDB using bcrypt.compare.
+ * On first-ever login (empty DB), the admin user is bootstrapped from .env variables.
  */
 const postLogin = async (req, res, next) => {
     const errors = validationResult(req);
@@ -35,47 +36,53 @@ const postLogin = async (req, res, next) => {
 
     const { username, password } = req.body;
 
-    // Load credentials directly from .env variables
-    const envUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
-    const envPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Password123';
-    const envEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@clientworkspace.io';
-    const envFirstName = process.env.DEFAULT_ADMIN_FIRST_NAME || 'System';
-    const envLastName = process.env.DEFAULT_ADMIN_LAST_NAME || 'Administrator';
-
-    // Verify incoming parameters against env settings
-    if (username.toLowerCase() !== envUsername.toLowerCase() || password !== envPassword) {
+    const renderLoginError = () => {
         return res.render('auth/login', {
             title: 'Sign In | Client Workspace',
             errors: {},
             username,
             alert: { type: 'danger', message: 'Invalid username or password.' }
         });
-    }
+    };
 
     try {
-        // Synchronise user metadata with MongoDB to maintain a consistent admin _id for database relationships
+        // Look up the admin user in the database
         let user = await User.findOne({ role: 'admin' });
 
-        if (user) {
-            // Update fields if credentials modified in env
-            user.firstName = envFirstName;
-            user.lastName = envLastName;
-            user.username = envUsername.toLowerCase();
-            user.email = envEmail.toLowerCase();
-            user.password = envPassword; // Will trigger the Mongoose schema pre-save password hash
-            await user.save();
-        } else {
-            // Create user profile if database is clean
+        if (!user) {
+            // First-ever login: bootstrap the admin user from .env variables
+            const envUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
+            const envPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Password123';
+            const envEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@clientworkspace.io';
+            const envFirstName = process.env.DEFAULT_ADMIN_FIRST_NAME || 'System';
+            const envLastName = process.env.DEFAULT_ADMIN_LAST_NAME || 'Administrator';
+
+            // Verify against env before creating
+            if (username.toLowerCase() !== envUsername.toLowerCase() || password !== envPassword) {
+                if (req.recordFailedLogin) req.recordFailedLogin();
+                return renderLoginError();
+            }
+
             user = new User({
                 firstName: envFirstName,
                 lastName: envLastName,
                 username: envUsername.toLowerCase(),
                 email: envEmail.toLowerCase(),
-                password: envPassword,
+                password: envPassword, // pre-save hook will hash this
                 role: 'admin'
             });
             await user.save();
+        } else {
+            // Normal login: verify password against the stored bcrypt hash
+            const isMatch = await user.comparePassword(password);
+            if (!isMatch || username.toLowerCase() !== user.username) {
+                if (req.recordFailedLogin) req.recordFailedLogin();
+                return renderLoginError();
+            }
         }
+
+        // Authentication successful — clear any failed-attempt tracking for this IP
+        if (req.clearFailedLogins) req.clearFailedLogins();
 
         // Establish session properties
         req.session.userId = user._id;
