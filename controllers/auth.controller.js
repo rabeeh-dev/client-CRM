@@ -51,8 +51,8 @@ const postLogin = async (req, res, next) => {
 
         if (!user) {
             // First-ever login: bootstrap the admin user from .env variables
-            const envUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
-            const envPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'Password123';
+            const envUsername = process.env.DEFAULT_ADMIN_USERNAME;
+            const envPassword = process.env.DEFAULT_ADMIN_PASSWORD;
             const envEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@clientworkspace.io';
             const envFirstName = process.env.DEFAULT_ADMIN_FIRST_NAME || 'System';
             const envLastName = process.env.DEFAULT_ADMIN_LAST_NAME || 'Administrator';
