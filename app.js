@@ -16,6 +16,10 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Trust proxy for secure session cookies in production (behind Nginx, AWS ELB, etc.)
+app.set('trust proxy', 1);
+
+
 // Set View Engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
